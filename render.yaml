@@ -3,9 +3,8 @@ services:
     name: shadowban-server
     env: node
     plan: free
-    buildCommand: npm install && npm run build
-    startCommand: npm start
-    workingDirectory: apps/server
+    buildCommand: cd apps/server && npm install && npm run build
+    startCommand: cd apps/server && npm start
     envVars:
       - key: NODE_ENV
         value: production
@@ -25,9 +24,8 @@ services:
     name: shadowban-client
     env: static
     plan: free
-    buildCommand: npm install && npm run build
+    buildCommand: cd apps/client && npm install && npm run build
     publishPath: apps/client/dist
-    workingDirectory: apps/client
     envVars:
       - key: VITE_SERVER_URL
         fromService:
