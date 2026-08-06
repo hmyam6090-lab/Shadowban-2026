@@ -23,7 +23,6 @@ services:
   - type: web
     name: shadowban-client
     runtime: static
-    plan: free
     buildCommand: cd apps/client && npm install && npm run build
     staticPublishPath: apps/client/dist
     routes:
