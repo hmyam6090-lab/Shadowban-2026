@@ -1,0 +1,122 @@
+[
+  {
+    "id": "flood-hospital-capacity",
+    "crisisId": "flood",
+    "type": "EVIDENCE",
+    "title": "Hospital Capacity",
+    "text": "Hospital reaches 92% capacity.",
+    "supportsResponseId": "evacuate"
+  },
+  {
+    "id": "flood-river-level",
+    "crisisId": "flood",
+    "type": "EVIDENCE",
+    "title": "River Level",
+    "text": "River levels have risen above the safe threshold.",
+    "supportsResponseId": "evacuate"
+  },
+  {
+    "id": "flood-emergency-ward",
+    "crisisId": "flood",
+    "type": "EVIDENCE",
+    "title": "Emergency Ward",
+    "text": "Emergency ward intake triples within 90 minutes.",
+    "supportsResponseId": "evacuate"
+  },
+  {
+    "id": "flood-traffic-gridlock",
+    "crisisId": "flood",
+    "type": "EVIDENCE",
+    "title": "Traffic Gridlock",
+    "text": "Main roads toward the floodplain are already jammed.",
+    "supportsResponseId": "evacuate"
+  },
+  {
+    "id": "flood-school-closures",
+    "crisisId": "flood",
+    "type": "EVIDENCE",
+    "title": "School Closures",
+    "text": "Schools are closing and converting to temporary shelters.",
+    "supportsResponseId": "evacuate"
+  },
+  {
+    "id": "flood-water-rescue",
+    "crisisId": "flood",
+    "type": "EVIDENCE",
+    "title": "Water Rescue",
+    "text": "Rescue boats report stranded households on multiple blocks.",
+    "supportsResponseId": "evacuate"
+  },
+  {
+    "id": "flood-humidity-spike",
+    "crisisId": "flood",
+    "type": "EVIDENCE",
+    "title": "Humidity Spike",
+    "text": "Humidity and runoff readings continue to climb.",
+    "supportsResponseId": "evacuate"
+  },
+  {
+    "id": "flood-bridge-closure",
+    "crisisId": "flood",
+    "type": "EVIDENCE",
+    "title": "Bridge Closure",
+    "text": "The eastern bridge closes because of rising water pressure.",
+    "supportsResponseId": "evacuate"
+  },
+  {
+    "id": "flood-social-media",
+    "crisisId": "flood",
+    "type": "NOISE",
+    "title": "Social Media",
+    "text": "A trend is spreading panic unrelated to the actual flood map."
+  },
+  {
+    "id": "flood-celebrity-tweet",
+    "crisisId": "flood",
+    "type": "NOISE",
+    "title": "Celebrity Tweet",
+    "text": "A celebrity posts a misleading update from outside the region."
+  },
+  {
+    "id": "flood-viral-meme",
+    "crisisId": "flood",
+    "type": "NOISE",
+    "title": "Viral Meme",
+    "text": "A meme implies the flooding is staged for attention."
+  },
+  {
+    "id": "flood-weather-opinion",
+    "crisisId": "flood",
+    "type": "NOISE",
+    "title": "Weather Opinion",
+    "text": "An opinion columnist speculates about future storms without data."
+  },
+  {
+    "id": "flood-supply-rumor",
+    "crisisId": "flood",
+    "type": "NOISE",
+    "title": "Supply Rumor",
+    "text": "Rumors claim rescue supplies are already gone."
+  },
+  {
+    "id": "flood-town-hall-clip",
+    "crisisId": "flood",
+    "type": "NOISE",
+    "title": "Town Hall Clip",
+    "text": "An out-of-context clip from a town hall circulates online."
+  },
+  {
+    "id": "flood-unverified-photo",
+    "crisisId": "flood",
+    "type": "NOISE",
+    "title": "Unverified Photo",
+    "text": "A blurry image is shared without a location or timestamp."
+  },
+  {
+    "id": "flood-headline-drift",
+    "crisisId": "flood",
+    "type": "NOISE",
+    "title": "Headline Drift",
+    "text": "A headline mixes flood facts with unrelated disaster commentary."
+  }
+]

@@ -1,0 +1,6 @@
+{
+  "id": "echo_chamber",
+  "name": "Echo Chamber",
+  "faction": "ALGORITHM",
+  "description": "Repeats the loudest version of every claim."
+}

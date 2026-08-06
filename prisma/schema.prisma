@@ -1,0 +1,147 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Faction {
+  SOCIETY
+  ALGORITHM
+}
+
+enum GamePhase {
+  LOBBY
+  CRISIS_REVEAL
+  EVIDENCE_PREPARATION
+  DEAL_INFORMATION
+  ROLE_ABILITY
+  DISCUSSION
+  VOTING
+  RESOLUTION
+  GAME_END
+}
+
+enum InformationType {
+  EVIDENCE
+  NOISE
+}
+
+model Game {
+  id             String      @id @default(cuid())
+  code           String      @unique
+  totalRounds    Int         @default(6)
+  currentRound   Int         @default(1)
+  phase          GamePhase   @default(LOBBY)
+  societyScore   Int         @default(0)
+  algorithmScore Int         @default(0)
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+  players        GamePlayer[]
+  rounds         GameRound[]
+  votes          Vote[]
+}
+
+model Player {
+  id         String       @id @default(cuid())
+  name       String
+  createdAt  DateTime     @default(now())
+  gamePlayers GamePlayer[]
+  votes      Vote[]
+
+  @@unique([name])
+}
+
+model GamePlayer {
+  id          String   @id @default(cuid())
+  gameId      String
+  playerId    String
+  isHost      Boolean  @default(false)
+  connected   Boolean  @default(true)
+  ready       Boolean  @default(false)
+  roleId      String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  game        Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  player      Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+
+  @@unique([gameId, playerId])
+}
+
+model Crisis {
+  id               String   @id
+  name             String
+  description      String
+  correctResponseId String
+  responses        Json
+  evidenceIds      Json
+  noiseIds         Json
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  informationCards InformationCard[]
+  rounds           GameRound[]
+}
+
+model InformationCard {
+  id                 String           @id
+  crisisId           String
+  type               InformationType
+  title              String
+  text               String
+  supportsResponseId String?
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+
+  crisis             Crisis           @relation(fields: [crisisId], references: [id], onDelete: Cascade)
+}
+
+model Role {
+  id          String   @id
+  name        String
+  faction     Faction
+  description String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model AlgorithmSetup {
+  id           String   @id
+  name         String
+  description  String
+  distribution Json
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  rounds       GameRound[]
+}
+
+model GameRound {
+  id             String   @id @default(cuid())
+  gameId         String
+  crisisId       String
+  algorithmId    String?
+  roundNumber    Int
+  societyScore   Int
+  algorithmScore Int
+  createdAt      DateTime @default(now())
+
+  game           Game             @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  crisis         Crisis           @relation(fields: [crisisId], references: [id], onDelete: Restrict)
+  algorithm      AlgorithmSetup?   @relation(fields: [algorithmId], references: [id], onDelete: SetNull)
+  votes          Vote[]
+}
+
+model Vote {
+  id             String   @id @default(cuid())
+  gameId         String
+  roundId        String?
+  playerId       String
+  responseId     String
+  createdAt      DateTime @default(now())
+
+  game           Game     @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  round          GameRound? @relation(fields: [roundId], references: [id], onDelete: SetNull)
+  player         Player   @relation(fields: [playerId], references: [id], onDelete: Cascade)
+}

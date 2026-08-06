@@ -1,0 +1,43 @@
+{
+  "id": "flood",
+  "name": "Flood",
+  "description": "Heavy rainfall has caused severe flooding throughout the region.",
+  "responses": [
+    {
+      "id": "evacuate",
+      "label": "Evacuate",
+      "description": "Move residents away from dangerous zones."
+    },
+    {
+      "id": "investigate",
+      "label": "Investigate",
+      "description": "Deploy teams to verify the scale of the damage."
+    },
+    {
+      "id": "no-action",
+      "label": "No Immediate Action",
+      "description": "Wait for more data before making a move."
+    }
+  ],
+  "correctResponseId": "evacuate",
+  "evidenceIds": [
+    "flood-hospital-capacity",
+    "flood-river-level",
+    "flood-emergency-ward",
+    "flood-traffic-gridlock",
+    "flood-school-closures",
+    "flood-water-rescue",
+    "flood-humidity-spike",
+    "flood-bridge-closure"
+  ],
+  "noiseIds": [
+    "flood-social-media",
+    "flood-celebrity-tweet",
+    "flood-viral-meme",
+    "flood-weather-opinion",
+    "flood-supply-rumor",
+    "flood-town-hall-clip",
+    "flood-unverified-photo",
+    "flood-headline-drift"
+  ]
+}

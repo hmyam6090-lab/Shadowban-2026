@@ -1,0 +1,11 @@
+{
+  "id": "fear-sells",
+  "name": "Fear Sells",
+  "description": "Prefers alarming evidence and spreads noise.",
+  "distribution": {
+    "response1": 8,
+    "response2": 5,
+    "response3": 3,
+    "noise": 8
+  }
+}

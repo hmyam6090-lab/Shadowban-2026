@@ -1,0 +1,42 @@
+services:
+  - type: web
+    name: shadowban-server
+    env: node
+    plan: free
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    workingDirectory: apps/server
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3001
+      - key: DATABASE_URL
+        fromDatabase:
+          name: shadowban-db
+          property: connectionString
+      - key: CLIENT_ORIGIN
+        fromService:
+          type: web
+          name: shadowban-client
+          property: url
+
+  - type: web
+    name: shadowban-client
+    env: static
+    plan: free
+    buildCommand: npm install && npm run build
+    publishPath: apps/client/dist
+    workingDirectory: apps/client
+    envVars:
+      - key: VITE_SERVER_URL
+        fromService:
+          type: web
+          name: shadowban-server
+          property: url
+
+databases:
+  - name: shadowban-db
+    databaseName: shadowban
+    user: shadowban
+    plan: free

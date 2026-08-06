@@ -1,0 +1,48 @@
+[
+  {
+    "id": "drought-reservoir",
+    "crisisId": "drought",
+    "type": "EVIDENCE",
+    "title": "Reservoir Levels",
+    "text": "Reservoir levels fall below 20% capacity.",
+    "supportsResponseId": "ration"
+  },
+  {
+    "id": "drought-soil",
+    "crisisId": "drought",
+    "type": "EVIDENCE",
+    "title": "Soil Moisture",
+    "text": "Soil moisture is at its lowest reading this season.",
+    "supportsResponseId": "ration"
+  },
+  {
+    "id": "drought-farm",
+    "crisisId": "drought",
+    "type": "EVIDENCE",
+    "title": "Farm Reports",
+    "text": "Farmers report crop stress and irrigation failures.",
+    "supportsResponseId": "ration"
+  },
+  {
+    "id": "drought-rationing",
+    "crisisId": "drought",
+    "type": "EVIDENCE",
+    "title": "Water Rationing",
+    "text": "The water board drafts emergency rationing plans.",
+    "supportsResponseId": "ration"
+  },
+  {
+    "id": "drought-opinion",
+    "crisisId": "drought",
+    "type": "NOISE",
+    "title": "Opinion Column",
+    "text": "A columnist suggests waiting for a miracle storm."
+  },
+  {
+    "id": "drought-social",
+    "crisisId": "drought",
+    "type": "NOISE",
+    "title": "Social Media",
+    "text": "A post claims drought warnings are overblown."
+  }
+]

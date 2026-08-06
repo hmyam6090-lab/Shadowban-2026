@@ -1,0 +1,25 @@
+{
+  "id": "drought",
+  "name": "Drought",
+  "description": "Reservoirs are shrinking and crop yields are falling fast.",
+  "responses": [
+    {
+      "id": "ration",
+      "label": "Ration Water",
+      "description": "Impose immediate consumption limits."
+    },
+    {
+      "id": "relief",
+      "label": "Deliver Relief",
+      "description": "Send emergency supplies and tankers."
+    },
+    {
+      "id": "monitor",
+      "label": "Monitor",
+      "description": "Track weather before escalating."
+    }
+  ],
+  "correctResponseId": "ration",
+  "evidenceIds": ["drought-reservoir", "drought-soil", "drought-farm", "drought-rationing"],
+  "noiseIds": ["drought-opinion", "drought-social"]
+}

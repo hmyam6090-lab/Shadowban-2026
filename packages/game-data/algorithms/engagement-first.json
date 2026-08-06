@@ -1,0 +1,11 @@
+{
+  "id": "engagement-first",
+  "name": "Engagement First",
+  "description": "Prioritizes whatever creates the most table chatter.",
+  "distribution": {
+    "response1": 6,
+    "response2": 6,
+    "response3": 4,
+    "noise": 8
+  }
+}

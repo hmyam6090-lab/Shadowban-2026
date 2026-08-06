@@ -1,0 +1,25 @@
+{
+  "id": "power-outage",
+  "name": "Power Outage",
+  "description": "A regional outage has taken down hospitals, traffic systems, and internet access.",
+  "responses": [
+    {
+      "id": "stabilize",
+      "label": "Stabilize Critical Services",
+      "description": "Prioritize power for hospitals and transit."
+    },
+    {
+      "id": "investigate-grid",
+      "label": "Investigate Grid Failure",
+      "description": "Find the root cause before rerouting."
+    },
+    {
+      "id": "announce",
+      "label": "Public Announcement",
+      "description": "Issue a broad communication update."
+    }
+  ],
+  "correctResponseId": "stabilize",
+  "evidenceIds": ["outage-hospital", "outage-substation", "outage-commuters"],
+  "noiseIds": ["outage-forum", "outage-rumor", "outage-streamer"]
+}

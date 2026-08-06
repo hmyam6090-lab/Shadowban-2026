@@ -1,0 +1,47 @@
+[
+  {
+    "id": "outage-hospital",
+    "crisisId": "power-outage",
+    "type": "EVIDENCE",
+    "title": "Hospital Backup",
+    "text": "Hospitals switch to backup power within minutes.",
+    "supportsResponseId": "stabilize"
+  },
+  {
+    "id": "outage-substation",
+    "crisisId": "power-outage",
+    "type": "EVIDENCE",
+    "title": "Substation Report",
+    "text": "A transformer failure cascades across the grid.",
+    "supportsResponseId": "stabilize"
+  },
+  {
+    "id": "outage-commuters",
+    "crisisId": "power-outage",
+    "type": "EVIDENCE",
+    "title": "Commuter Delay",
+    "text": "Traffic lights fail and commuters are stranded in intersections.",
+    "supportsResponseId": "stabilize"
+  },
+  {
+    "id": "outage-forum",
+    "crisisId": "power-outage",
+    "type": "NOISE",
+    "title": "Forum Post",
+    "text": "A forum thread blames the outage on unrelated rumors."
+  },
+  {
+    "id": "outage-rumor",
+    "crisisId": "power-outage",
+    "type": "NOISE",
+    "title": "Rumor",
+    "text": "A rumor claims the blackout is limited to one neighborhood."
+  },
+  {
+    "id": "outage-streamer",
+    "crisisId": "power-outage",
+    "type": "NOISE",
+    "title": "Streamer Clip",
+    "text": "A streamer speculates about the outage without evidence."
+  }
+]

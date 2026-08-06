@@ -1,0 +1,11 @@
+{
+  "id": "confirmation-bias",
+  "name": "Confirmation Bias",
+  "description": "Reinforces the most convincing narrative even when incomplete.",
+  "distribution": {
+    "response1": 7,
+    "response2": 5,
+    "response3": 4,
+    "noise": 8
+  }
+}

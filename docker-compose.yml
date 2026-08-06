@@ -1,0 +1,15 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: shadowban
+      POSTGRES_USER: shadowban
+      POSTGRES_PASSWORD: shadowban
+    ports:
+      - '5432:5432'
+    volumes:
+      - shadowban_postgres_data:/var/lib/postgresql/data
+
+volumes:
+  shadowban_postgres_data:
