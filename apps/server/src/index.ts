@@ -1,7 +1,7 @@
 import 'dotenv/config';
 
 import cors from 'cors';
-import express from 'express';
+import express, { Request, Response } from 'express';
 import morgan from 'morgan';
 import { createServer } from 'node:http';
 
@@ -21,7 +21,7 @@ app.use(morgan(config.nodeEnv === 'production' ? 'combined' : 'dev'));
 
 app.get('/api/health', healthController);
 
-app.post('/api/games', (request, response) => {
+app.post('/api/games', (request: Request, response: Response) => {
   const hostName = typeof request.body?.hostName === 'string' ? request.body.hostName.trim() : '';
   const totalRounds = Number.isInteger(request.body?.totalRounds) ? Number(request.body.totalRounds) : undefined;
 
@@ -39,7 +39,7 @@ app.post('/api/games', (request, response) => {
   });
 });
 
-app.post('/api/games/:gameCode/join', (request, response) => {
+app.post('/api/games/:gameCode/join', (request: Request, response: Response) => {
   const gameCode = String(request.params.gameCode).trim().toUpperCase();
   const playerName = typeof request.body?.playerName === 'string' ? request.body.playerName.trim() : '';
 
@@ -61,7 +61,7 @@ app.post('/api/games/:gameCode/join', (request, response) => {
   }
 });
 
-app.get('/api/games/:gameCode', (request, response) => {
+app.get('/api/games/:gameCode', (request: Request, response: Response) => {
   try {
     const gameCode = String(request.params.gameCode).trim().toUpperCase();
     const game = gameManager.getGameByCode(gameCode);
@@ -72,7 +72,7 @@ app.get('/api/games/:gameCode', (request, response) => {
   }
 });
 
-app.get('/api/crises', (_request, response) => {
+app.get('/api/crises', (_request: Request, response: Response) => {
   const crises = getContentCatalog().crises.map((crisis) => {
     return {
       id: crisis.id,
@@ -87,7 +87,7 @@ app.get('/api/crises', (_request, response) => {
   response.json(crises);
 });
 
-app.get('/', (_request, response) => {
+app.get('/', (_request: Request, response: Response) => {
   response.json({ status: 'shadowban-server-ready' });
 });
 
