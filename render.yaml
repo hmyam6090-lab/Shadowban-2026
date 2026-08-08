@@ -3,7 +3,7 @@ services:
     name: shadowban-server
     runtime: node
     plan: free
-    buildCommand: npm install && npx prisma generate && cd apps/server && npm run build
+    buildCommand: npm install && npx prisma generate
     startCommand: cd apps/server && npm start
     envVars:
       - key: NODE_ENV
