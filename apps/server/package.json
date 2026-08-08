@@ -4,6 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/index.ts",
+    "build": "echo 'No build required - using tsx directly'",
     "start": "npx tsx src/index.ts",
     "test": "vitest run"
   },
