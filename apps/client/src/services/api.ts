@@ -1,6 +1,23 @@
 import type { CrisisPublicDTO, PublicGameState } from '@shadowban/shared';
 
-const serverUrl = import.meta.env.VITE_SERVER_URL || 'http://localhost:3001';
+function getServerUrl(): string {
+  // Try to use environment variable first (for local development)
+  if (import.meta.env.VITE_SERVER_URL) {
+    return import.meta.env.VITE_SERVER_URL;
+  }
+  
+  // For production, detect the server URL based on the current origin
+  // If we're on the client subdomain, use the server subdomain
+  const currentOrigin = window.location.origin;
+  if (currentOrigin.includes('shadowban-client')) {
+    return currentOrigin.replace('shadowban-client', 'shadowban-server');
+  }
+  
+  // Fallback to localhost for development
+  return 'http://localhost:3001';
+}
+
+const serverUrl = getServerUrl();
 
 async function readJson<T>(response: Response): Promise<T> {
   if (!response.ok) {

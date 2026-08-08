@@ -5,9 +5,24 @@ import type { ServerToClientEvents, ClientToServerEvents } from '@shadowban/shar
 
 import { useAppStore } from '../stores/appStore.js';
 
-const serverUrl = import.meta.env.VITE_SERVER_URL || 'http://localhost:3001';
+function getServerUrl(): string {
+  // Try to use environment variable first (for local development)
+  if (import.meta.env.VITE_SERVER_URL) {
+    return import.meta.env.VITE_SERVER_URL;
+  }
+  
+  // For production, detect the server URL based on the current origin
+  // If we're on the client subdomain, use the server subdomain
+  const currentOrigin = window.location.origin;
+  if (currentOrigin.includes('shadowban-client')) {
+    return currentOrigin.replace('shadowban-client', 'shadowban-server');
+  }
+  
+  // Fallback to localhost for development
+  return 'http://localhost:3001';
+}
 
-const socket: Socket<ServerToClientEvents, ClientToServerEvents> = io(serverUrl, {
+const socket: Socket<ServerToClientEvents, ClientToServerEvents> = io(getServerUrl(), {
   autoConnect: false,
   transports: ['websocket', 'polling']
 });
