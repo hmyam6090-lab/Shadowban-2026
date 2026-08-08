@@ -1,5 +1,7 @@
 import type { CrisisPublicDTO, PublicGameState } from '@shadowban/shared';
 
+const serverUrl = import.meta.env.VITE_SERVER_URL || 'http://localhost:3001';
+
 async function readJson<T>(response: Response): Promise<T> {
   if (!response.ok) {
     const error = await response.text();
@@ -10,7 +12,7 @@ async function readJson<T>(response: Response): Promise<T> {
 }
 
 export async function checkHealth(): Promise<boolean> {
-  const response = await fetch('/api/health');
+  const response = await fetch(`${serverUrl}/api/health`);
 
   if (!response.ok) {
     return false;
@@ -21,7 +23,7 @@ export async function checkHealth(): Promise<boolean> {
 }
 
 export async function createGame(hostName: string, totalRounds?: number): Promise<{ gameId: string; gameCode: string; playerId: string }> {
-  const response = await fetch('/api/games', {
+  const response = await fetch(`${serverUrl}/api/games`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
@@ -33,7 +35,7 @@ export async function createGame(hostName: string, totalRounds?: number): Promis
 }
 
 export async function joinGame(gameCode: string, playerName: string): Promise<{ gameId: string; playerId: string }> {
-  const response = await fetch(`/api/games/${gameCode}/join`, {
+  const response = await fetch(`${serverUrl}/api/games/${gameCode}/join`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
@@ -45,11 +47,11 @@ export async function joinGame(gameCode: string, playerName: string): Promise<{ 
 }
 
 export async function fetchGame(gameCode: string): Promise<PublicGameState> {
-  const response = await fetch(`/api/games/${gameCode}`);
+  const response = await fetch(`${serverUrl}/api/games/${gameCode}`);
   return readJson<PublicGameState>(response);
 }
 
 export async function fetchCrises(): Promise<CrisisPublicDTO[]> {
-  const response = await fetch('/api/crises');
+  const response = await fetch(`${serverUrl}/api/crises`);
   return readJson<CrisisPublicDTO[]>(response);
 }
