@@ -34,7 +34,7 @@ services:
         fromService:
           type: web
           name: shadowban-server
-          property: hostport
+          property: url
 
 databases:
   - name: shadowban-db
