@@ -15,7 +15,7 @@ const config = getServerConfig();
 const app = express();
 const httpServer = createServer(app);
 
-app.use(cors({ origin: config.clientOrigin, credentials: true }));
+app.use(cors());
 app.use(express.json());
 app.use(morgan(config.nodeEnv === 'production' ? 'combined' : 'dev'));
 
