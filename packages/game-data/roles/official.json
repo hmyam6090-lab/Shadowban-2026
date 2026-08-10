@@ -1,0 +1,10 @@
+{
+  "id": "official",
+  "name": "Official",
+  "faction": "SOCIETY",
+  "description": "Compares clues and tracks inconsistencies.",
+  "abilityName": "Eyes On You",
+  "abilityDescription": "Once per round, choose another player. You see one random Information Card from their hand.",
+  "abilityType": "once_per_round",
+  "abilityTiming": "role_ability_phase"
+}

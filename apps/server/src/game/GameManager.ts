@@ -1,4 +1,4 @@
-import { DEFAULT_TOTAL_ROUNDS, Faction, GamePhase, InformationType, MAX_PLAYERS, MIN_PLAYERS, type GameState, type InformationCard, type Player, type PrivatePlayerState, type PublicGameState } from '@shadowban/shared';
+import { DEFAULT_TOTAL_ROUNDS, AbilityTiming, AbilityType, Faction, GamePhase, InformationType, MAX_PLAYERS, MIN_PLAYERS, type GameState, type InformationCard, type Player, type PrivatePlayerState, type PublicGameState } from '@shadowban/shared';
 
 import { getCrisisById, getEvidenceForCrisis, getRoleById } from '../services/contentService.js';
 import { RoundManager } from './RoundManager.js';
@@ -23,7 +23,10 @@ export class GameManager {
       algorithmScore: 0,
       publicEvidence: [],
       votes: {},
-      playerStates: {}
+      playerStates: {},
+      shadowbanVotes: {},
+      societyWins: 0,
+      algorithmWins: 0
     };
 
     this.games.set(gameId, game);
@@ -66,6 +69,8 @@ export class GameManager {
     game.currentRound = 1;
     game.algorithmScore = 0;
     game.societyScore = 0;
+    game.societyWins = 0;
+    game.algorithmWins = 0;
     this.roundManager.startRound(game);
   }
 
@@ -92,6 +97,12 @@ export class GameManager {
         this.roundManager.resolveRound(game);
         break;
       case GamePhase.RESOLUTION:
+        this.roundManager.startShadowbanPhase(game);
+        break;
+      case GamePhase.SHADOWBAN:
+        this.roundManager.resolveShadowban(game);
+        break;
+      case GamePhase.INFORMATION_AUDIT:
         this.roundManager.startNextRound(game);
         break;
       default:
@@ -151,13 +162,24 @@ export class GameManager {
       throw new Error('Player not found.');
     }
 
+    if (playerState.shadowbanned) {
+      throw new Error('Shadowbanned players cannot present evidence.');
+    }
+
     // Check if the player has this card in their hand
     if (!playerState.hand.includes(cardId)) {
       throw new Error('Player does not have this card.');
     }
 
-    // Set the presented card
-    playerState.presentedCardId = cardId;
+    // Check if player has already presented 2 cards
+    if (playerState.presentedCardIds.length >= 2) {
+      throw new Error('You can only present up to 2 cards per discussion.');
+    }
+
+    // Add to presented cards
+    if (!playerState.presentedCardIds.includes(cardId)) {
+      playerState.presentedCardIds.push(cardId);
+    }
 
     // Add to public evidence if not already there
     if (!game.publicEvidence.includes(cardId)) {
@@ -225,7 +247,7 @@ export class GameManager {
     };
   }
 
-  activateRoleAbility(gameId: string, playerId: string, targetPlayerId?: string, targetCardId?: string): void {
+  activateRoleAbility(gameId: string, playerId: string, targetPlayerId?: string, targetCardId?: string, additionalTargetId?: string, responseId?: string): void {
     const game = this.getGame(gameId);
     const playerState = game.playerStates[playerId];
 
@@ -233,20 +255,32 @@ export class GameManager {
       throw new Error('Player not found.');
     }
 
-    if (playerState.abilityUsed) {
-      throw new Error('Ability already used this round.');
-    }
-
-    if (game.phase !== GamePhase.ROLE_ABILITY) {
-      throw new Error('Role abilities can only be used during the Role Ability phase.');
+    if (playerState.shadowbanned) {
+      throw new Error('Shadowbanned players cannot use abilities.');
     }
 
     const role = getRoleById(playerState.roleId);
 
-    // Government Official: Inspect another player's card
-    if (role.id === 'government_official') {
+    // Check ability timing
+    if (role.abilityTiming === AbilityTiming.ROLE_ABILITY_PHASE && game.phase !== GamePhase.ROLE_ABILITY) {
+      throw new Error('This ability can only be used during the Role Ability phase.');
+    }
+    if (role.abilityTiming === AbilityTiming.ANYTIME_BEFORE_DISCUSSION && game.phase !== GamePhase.ROLE_ABILITY && game.phase !== GamePhase.DEAL_INFORMATION) {
+      throw new Error('This ability can only be used before discussion begins.');
+    }
+
+    // Check ability usage limits
+    if (role.abilityType === AbilityType.ONCE_PER_ROUND && playerState.abilityUsed) {
+      throw new Error('Ability already used this round.');
+    }
+    if (role.abilityType === AbilityType.ONCE_PER_GAME && playerState.abilityUsed) {
+      throw new Error('Ability already used this game.');
+    }
+
+    // Official: Eyes On You
+    if (role.id === 'official') {
       if (!targetPlayerId) {
-        throw new Error('Target player required for Government Official ability.');
+        throw new Error('Target player required for Official ability.');
       }
 
       const targetState = game.playerStates[targetPlayerId];
@@ -258,7 +292,6 @@ export class GameManager {
         throw new Error('Target player has no cards to inspect.');
       }
 
-      // Inspect a random card from the target's hand
       const randomCardIndex = Math.floor(Math.random() * targetState.hand.length);
       const inspectedCardId = targetState.hand[randomCardIndex];
 
@@ -266,10 +299,118 @@ export class GameManager {
         throw new Error('Failed to select a card for inspection.');
       }
 
-      // Add to inspection results
       playerState.privateInspectionResults.push(inspectedCardId);
       playerState.abilityUsed = true;
-    } else {
+    }
+    // Journalist: On Record
+    else if (role.id === 'journalist') {
+      if (!targetPlayerId) {
+        throw new Error('Target player required for Journalist ability.');
+      }
+
+      const targetState = game.playerStates[targetPlayerId];
+      if (!targetState) {
+        throw new Error('Target player not found.');
+      }
+
+      // Store the public claim - this will be broadcast to all players
+      // The target player's response is stored in a special field
+      playerState.privateInspectionResults.push(`JOURNALIST_CLAIM:${targetPlayerId}:${responseId || 'NO_RESPONSE'}`);
+      playerState.abilityUsed = true;
+    }
+    // Analyst: Final Call
+    else if (role.id === 'analyst') {
+      if (!responseId) {
+        throw new Error('Response ID required for Analyst ability.');
+      }
+
+      playerState.analystPrediction = responseId;
+      playerState.vote = responseId; // Lock the vote
+      playerState.abilityUsed = true;
+    }
+    // Investigator: Crosscheck
+    else if (role.id === 'investigator') {
+      if (!targetPlayerId || !additionalTargetId) {
+        throw new Error('Two target players required for Investigator ability.');
+      }
+
+      const targetState1 = game.playerStates[targetPlayerId];
+      const targetState2 = game.playerStates[additionalTargetId];
+
+      if (!targetState1 || !targetState2) {
+        throw new Error('One or both target players not found.');
+      }
+
+      const role1 = getRoleById(targetState1.roleId);
+      const role2 = getRoleById(targetState2.roleId);
+
+      const sameSide = role1.faction === role2.faction;
+      playerState.privateInspectionResults.push(`CROSSCHECK:${targetPlayerId}:${additionalTargetId}:${sameSide ? 'SAME_SIDE' : 'DIFFERENT_SIDES'}`);
+      playerState.abilityUsed = true;
+    }
+    // Echo Chamber: Closed Circuit
+    else if (role.id === 'echo_chamber') {
+      if (!targetPlayerId) {
+        throw new Error('Target player required for Echo Chamber ability.');
+      }
+
+      // This ability requires UI state management for communication restrictions
+      // For now, we'll store the restriction in player state
+      playerState.privateInspectionResults.push(`CLOSED_CIRCUIT:${targetPlayerId}`);
+      playerState.abilityUsed = true;
+    }
+    // Hacker: Account Breach
+    else if (role.id === 'hacker') {
+      if (!targetPlayerId) {
+        throw new Error('Target player required for Hacker ability.');
+      }
+
+      const targetState = game.playerStates[targetPlayerId];
+      if (!targetState) {
+        throw new Error('Target player not found.');
+      }
+
+      const targetRole = getRoleById(targetState.roleId);
+      const randomCardIndex = targetState.hand.length > 0 ? Math.floor(Math.random() * targetState.hand.length) : -1;
+      const randomCardId = randomCardIndex >= 0 ? targetState.hand[randomCardIndex] : 'NO_CARD';
+      const analystPrediction = targetState.analystPrediction || 'NO_PREDICTION';
+
+      playerState.privateInspectionResults.push(`ACCOUNT_BREACH:${targetPlayerId}:${targetRole.id}:${randomCardId}:${analystPrediction}`);
+      targetState.accountBreached = true;
+      playerState.abilityUsed = true;
+    }
+    // Algorithm: For You
+    else if (role.id === 'algorithm') {
+      if (!targetPlayerId) {
+        throw new Error('Target player required for Algorithm ability.');
+      }
+
+      const targetState = game.playerStates[targetPlayerId];
+      if (!targetState) {
+        throw new Error('Target player not found.');
+      }
+
+      // Give the target an extra card from the crisis evidence
+      const crisis = game.currentCrisisId ? getCrisisById(game.currentCrisisId) : undefined;
+      if (!crisis) {
+        throw new Error('No crisis active.');
+      }
+
+      const allEvidence = getEvidenceForCrisis(crisis.id);
+      const availableCards = allEvidence.filter(card => !targetState.hand.includes(card.id));
+      
+      if (availableCards.length === 0) {
+        throw new Error('No additional cards available to give.');
+      }
+
+      const randomCard = availableCards[Math.floor(Math.random() * availableCards.length)];
+      if (!randomCard) {
+        throw new Error('Failed to select a random card.');
+      }
+      targetState.hand.push(randomCard.id);
+      playerState.abilityUsed = true;
+    }
+    else {
       throw new Error('Role ability not implemented yet.');
     }
   }
@@ -322,7 +463,9 @@ export class GameManager {
       societyScore: game.societyScore,
       algorithmScore: game.algorithmScore,
       phaseEndsAt: game.phaseEndsAt,
-      publicEvidence: [...game.publicEvidence]
+      publicEvidence: [...game.publicEvidence],
+      societyWins: game.societyWins,
+      algorithmWins: game.algorithmWins
     };
   }
 
@@ -371,8 +514,13 @@ export class GameManager {
       hand,
       abilityUsed: playerState.abilityUsed,
       privateInspectionResults: [...playerState.privateInspectionResults],
-      presentedCardId: playerState.presentedCardId,
-      vote: playerState.vote
+      presentedCardIds: [...playerState.presentedCardIds],
+      vote: playerState.vote,
+      shadowbanned: playerState.shadowbanned,
+      analystPrediction: playerState.analystPrediction,
+      protectedFromShadowban: playerState.protectedFromShadowban,
+      mutedNextRound: playerState.mutedNextRound,
+      accountBreached: playerState.accountBreached
     };
   }
 
@@ -412,14 +560,20 @@ export class GameManager {
       game.hostPlayerId = player.id;
     }
 
-    const defaultRole = isHost ? 'government_official' : '';
+    const defaultRole = isHost ? 'official' : '';
 
     game.playerStates[player.id] = {
       playerId: player.id,
       roleId: defaultRole,
       hand: [],
+      presentedCardIds: [],
       abilityUsed: false,
-      privateInspectionResults: []
+      privateInspectionResults: [],
+      shadowbanned: false,
+      analystPrediction: undefined,
+      protectedFromShadowban: false,
+      mutedNextRound: false,
+      accountBreached: false
     };
 
     return player;
@@ -433,6 +587,115 @@ export class GameManager {
     }
 
     return player;
+  }
+
+  submitShadowbanVote(gameId: string, playerId: string, targetPlayerId: string): void {
+    const game = this.getGame(gameId);
+    const player = this.getPlayer(game, playerId);
+    const playerState = game.playerStates[playerId];
+
+    if (!playerState) {
+      throw new Error('Player state not found.');
+    }
+
+    if (game.phase !== GamePhase.SHADOWBAN) {
+      throw new Error('Shadowban voting is not active.');
+    }
+
+    if (playerState.shadowbanned) {
+      throw new Error('Shadowbanned players cannot vote.');
+    }
+
+    if (playerId === targetPlayerId) {
+      throw new Error('You cannot vote to shadowban yourself.');
+    }
+
+    game.shadowbanVotes[playerId] = targetPlayerId;
+  }
+
+  resolveShadowban(gameId: string): { shadowbannedPlayerId: string | null; influencerMutedPlayerId: string | null } {
+    const game = this.getGame(gameId);
+    const voteCounts: Record<string, number> = {};
+
+    // Count votes
+    for (const [voterId, targetId] of Object.entries(game.shadowbanVotes)) {
+      voteCounts[targetId] = (voteCounts[targetId] || 0) + 1;
+    }
+
+    // Find the player with the most votes
+    let maxVotes = 0;
+    let shadowbannedPlayerId: string | null = null;
+
+    for (const [targetId, count] of Object.entries(voteCounts)) {
+      if (count > maxVotes) {
+        maxVotes = count;
+        shadowbannedPlayerId = targetId;
+      }
+    }
+
+    let influencerMutedPlayerId: string | null = null;
+
+    if (shadowbannedPlayerId) {
+      const targetState = game.playerStates[shadowbannedPlayerId];
+      if (!targetState) {
+        throw new Error('Target player state not found.');
+      }
+      
+      const targetRole = getRoleById(targetState.roleId);
+
+      // Check if player is protected from shadowban
+      if (targetState.protectedFromShadowban) {
+        targetState.protectedFromShadowban = false;
+        shadowbannedPlayerId = null;
+      } else {
+        targetState.shadowbanned = true;
+
+        // Check if the shadowbanned player is an Influencer
+        if (targetRole.id === 'influencer') {
+          // Influencer can mute another player - this requires UI interaction
+          // For now, we'll store that the influencer was shadowbanned
+          // The actual mute selection will be handled via a separate method
+        }
+      }
+    }
+
+    // Clear shadowban votes for next round
+    game.shadowbanVotes = {};
+
+    return { shadowbannedPlayerId, influencerMutedPlayerId };
+  }
+
+  setInfluencerMuteTarget(gameId: string, influencerPlayerId: string, targetPlayerId: string): void {
+    const game = this.getGame(gameId);
+    const targetState = game.playerStates[targetPlayerId];
+
+    if (!targetState) {
+      throw new Error('Target player not found.');
+    }
+
+    targetState.mutedNextRound = true;
+  }
+
+  checkEliminationVictory(gameId: string): { societyWins: boolean; algorithmWins: boolean } {
+    const game = this.getGame(gameId);
+    let algorithmPlayersRemaining = 0;
+    let societyPlayersRemaining = 0;
+
+    for (const [playerId, playerState] of Object.entries(game.playerStates)) {
+      if (!playerState.shadowbanned) {
+        const role = getRoleById(playerState.roleId);
+        if (role.faction === Faction.ALGORITHM) {
+          algorithmPlayersRemaining++;
+        } else {
+          societyPlayersRemaining++;
+        }
+      }
+    }
+
+    return {
+      societyWins: algorithmPlayersRemaining === 0,
+      algorithmWins: societyPlayersRemaining === 0
+    };
   }
 
   private getRoleOrPlaceholder(roleId: string) {

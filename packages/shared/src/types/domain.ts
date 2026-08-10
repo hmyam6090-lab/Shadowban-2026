@@ -21,6 +21,8 @@ export enum GamePhase {
   DISCUSSION = 'DISCUSSION',
   VOTING = 'VOTING',
   RESOLUTION = 'RESOLUTION',
+  SHADOWBAN = 'SHADOWBAN',
+  INFORMATION_AUDIT = 'INFORMATION_AUDIT',
   GAME_END = 'GAME_END'
 }
 
@@ -66,21 +68,42 @@ export interface AlgorithmSetup {
   };
 }
 
+export enum AbilityType {
+  ONCE_PER_ROUND = 'once_per_round',
+  ONCE_PER_GAME = 'once_per_game',
+  PASSIVE = 'passive'
+}
+
+export enum AbilityTiming {
+  ROLE_ABILITY_PHASE = 'role_ability_phase',
+  ANYTIME_BEFORE_DISCUSSION = 'anytime_before_discussion',
+  ON_SHADOWBAN = 'on_shadowban'
+}
+
 export interface RoleDefinition {
   id: string;
   name: string;
   faction: Faction;
   description: string;
+  abilityName?: string;
+  abilityDescription?: string;
+  abilityType?: AbilityType;
+  abilityTiming?: AbilityTiming;
 }
 
 export interface PlayerGameState {
   playerId: string;
   roleId: string;
   hand: string[];
-  presentedCardId?: string;
+  presentedCardIds: string[];
   abilityUsed: boolean;
   vote?: string;
   privateInspectionResults: string[];
+  shadowbanned: boolean;
+  analystPrediction?: string;
+  protectedFromShadowban: boolean;
+  mutedNextRound: boolean;
+  accountBreached: boolean;
 }
 
 export interface GameState {
@@ -99,4 +122,7 @@ export interface GameState {
   publicEvidence: string[];
   votes: Record<string, string>;
   playerStates: Record<string, PlayerGameState>;
+  shadowbanVotes: Record<string, string>;
+  societyWins: number;
+  algorithmWins: number;
 }

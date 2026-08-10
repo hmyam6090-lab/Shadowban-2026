@@ -18,7 +18,7 @@ function broadcastGameState(io: Server<ClientToServerEvents, ServerToClientEvent
     io.to(player.socketId).emit('player:private-state', gameManager.getPrivateState(gameId, player.id));
   }
 
-  if (game.currentCrisisId && [GamePhase.CRISIS_REVEAL, GamePhase.EVIDENCE_PREPARATION, GamePhase.DEAL_INFORMATION, GamePhase.ROLE_ABILITY, GamePhase.DISCUSSION, GamePhase.VOTING, GamePhase.RESOLUTION, GamePhase.GAME_END].includes(game.phase)) {
+  if (game.currentCrisisId && [GamePhase.CRISIS_REVEAL, GamePhase.EVIDENCE_PREPARATION, GamePhase.DEAL_INFORMATION, GamePhase.ROLE_ABILITY, GamePhase.DISCUSSION, GamePhase.VOTING, GamePhase.RESOLUTION, GamePhase.SHADOWBAN, GamePhase.INFORMATION_AUDIT, GamePhase.GAME_END].includes(game.phase)) {
     io.to(gameId).emit('crisis:revealed', {
       crisis: getCrisisById(game.currentCrisisId)
     });
@@ -47,7 +47,9 @@ function broadcastGameState(io: Server<ClientToServerEvents, ServerToClientEvent
       correctResponseId: crisis.correctResponseId,
       selectedResponseId: selectedResponseId ?? crisis.correctResponseId,
       societyScore: game.societyScore,
-      algorithmScore: game.algorithmScore
+      algorithmScore: game.algorithmScore,
+      societyWins: game.societyWins,
+      algorithmWins: game.algorithmWins
     });
 
     io.to(gameId).emit('round:audit', {
@@ -62,11 +64,34 @@ function broadcastGameState(io: Server<ClientToServerEvents, ServerToClientEvent
     });
   }
 
+  if (game.phase === GamePhase.SHADOWBAN && typeof game.phaseEndsAt === 'number') {
+    io.to(gameId).emit('shadowban:started', { endsAt: game.phaseEndsAt });
+  }
+
+  if (game.phase === GamePhase.INFORMATION_AUDIT && typeof game.phaseEndsAt === 'number') {
+    const audit = gameManager.getRoundAudit(gameId);
+    io.to(gameId).emit('round:audit', {
+      availableEvidence: audit.availableEvidence.map((card) => ({
+        id: card.id,
+        crisisId: card.crisisId,
+        type: card.type,
+        title: card.title,
+        text: card.text
+      })),
+      playerFeedSummary: audit.playerFeedSummaries
+    });
+  }
+
   if (game.phase === GamePhase.GAME_END) {
+    const eliminationVictory = gameManager.checkEliminationVictory(gameId);
+    const winner = eliminationVictory.societyWins ? 'SOCIETY' : eliminationVictory.algorithmWins ? 'ALGORITHM' : (game.societyWins > game.algorithmWins ? 'SOCIETY' : 'ALGORITHM');
     io.to(gameId).emit('game:ended', {
-      winner: game.societyScore > game.algorithmScore ? 'SOCIETY' : 'ALGORITHM',
+      winner,
       societyScore: game.societyScore,
-      algorithmScore: game.algorithmScore
+      algorithmScore: game.algorithmScore,
+      societyWins: game.societyWins,
+      algorithmWins: game.algorithmWins,
+      eliminationVictory: eliminationVictory.societyWins || eliminationVictory.algorithmWins
     });
   }
 }
@@ -219,7 +244,7 @@ export function registerSocketHandlers(io: Server<ClientToServerEvents, ServerTo
       }
     });
 
-    socket.on('role:activate', ({ targetPlayerId, targetCardId }) => {
+    socket.on('role:activate', ({ targetPlayerId, targetCardId, additionalTargetId, responseId }) => {
       try {
         const { gameId, playerId } = socket.data;
 
@@ -227,7 +252,41 @@ export function registerSocketHandlers(io: Server<ClientToServerEvents, ServerTo
           return;
         }
 
-        gameManager.activateRoleAbility(gameId, playerId, targetPlayerId, targetCardId);
+        gameManager.activateRoleAbility(gameId, playerId, targetPlayerId, targetCardId, additionalTargetId, responseId);
+
+        // Broadcast updated game state
+        broadcastGameState(io, gameId);
+      } catch {
+        return;
+      }
+    });
+
+    socket.on('shadowban:vote', ({ targetPlayerId }) => {
+      try {
+        const { gameId, playerId } = socket.data;
+
+        if (!gameId || !playerId) {
+          return;
+        }
+
+        gameManager.submitShadowbanVote(gameId, playerId, targetPlayerId);
+
+        // Broadcast updated game state
+        broadcastGameState(io, gameId);
+      } catch {
+        return;
+      }
+    });
+
+    socket.on('influencer:mute', ({ targetPlayerId }) => {
+      try {
+        const { gameId, playerId } = socket.data;
+
+        if (!gameId || !playerId) {
+          return;
+        }
+
+        gameManager.setInfluencerMuteTarget(gameId, playerId, targetPlayerId);
 
         // Broadcast updated game state
         broadcastGameState(io, gameId);

@@ -14,6 +14,8 @@ export interface JoinGamePayload {
 export interface RoleActivatePayload {
   targetPlayerId?: string;
   targetCardId?: string;
+  additionalTargetId?: string;
+  responseId?: string;
 }
 
 export interface VoteSubmitPayload {
@@ -45,6 +47,8 @@ export interface RoundResolvedPayload {
   selectedResponseId: string;
   societyScore: number;
   algorithmScore: number;
+  societyWins: number;
+  algorithmWins: number;
 }
 
 export interface RoundAuditPayload {
@@ -59,10 +63,30 @@ export interface RoundAuditPayload {
   }>;
 }
 
+export interface ShadowbanVotePayload {
+  targetPlayerId: string;
+}
+
+export interface ShadowbanStartedPayload {
+  endsAt: number;
+}
+
+export interface ShadowbanResolvedPayload {
+  shadowbannedPlayerId: string | null;
+  influencerMutedPlayerId: string | null;
+}
+
+export interface InfluencerMutePayload {
+  targetPlayerId: string;
+}
+
 export interface GameEndedPayload {
   winner: 'SOCIETY' | 'ALGORITHM';
   societyScore: number;
   algorithmScore: number;
+  societyWins: number;
+  algorithmWins: number;
+  eliminationVictory: boolean;
 }
 
 export interface ClientToServerEvents {
@@ -72,6 +96,8 @@ export interface ClientToServerEvents {
   'role:activate': (payload: RoleActivatePayload) => void;
   'evidence:present': (payload: { cardId: string }) => void;
   'vote:submit': (payload: VoteSubmitPayload) => void;
+  'shadowban:vote': (payload: ShadowbanVotePayload) => void;
+  'influencer:mute': (payload: InfluencerMutePayload) => void;
   'host:advance': () => void;
 }
 
@@ -85,6 +111,8 @@ export interface ServerToClientEvents {
   'voting:updated': (payload: VotingUpdatedPayload) => void;
   'voting:revealed': (payload: VotingRevealedPayload) => void;
   'round:resolved': (payload: RoundResolvedPayload) => void;
+  'shadowban:started': (payload: ShadowbanStartedPayload) => void;
+  'shadowban:resolved': (payload: ShadowbanResolvedPayload) => void;
   'round:audit': (payload: RoundAuditPayload) => void;
   'game:ended': (payload: GameEndedPayload) => void;
 }

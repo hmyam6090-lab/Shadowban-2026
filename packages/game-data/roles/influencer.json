@@ -1,0 +1,10 @@
+{
+  "id": "influencer",
+  "name": "Influencer",
+  "faction": "ALGORITHM",
+  "description": "Amplifies misleading evidence and confusion.",
+  "abilityName": "Mute",
+  "abilityDescription": "If you are Shadowbanned, you may choose one other player. That player cannot speak during the next round. You are then eliminated normally.",
+  "abilityType": "passive",
+  "abilityTiming": "on_shadowban"
+}

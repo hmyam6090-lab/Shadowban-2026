@@ -19,6 +19,8 @@ export interface PublicGameState {
   algorithmScore: number;
   phaseEndsAt?: number;
   publicEvidence: string[];
+  societyWins: number;
+  algorithmWins: number;
 }
 
 export interface PrivatePlayerState {
@@ -31,8 +33,13 @@ export interface PrivatePlayerState {
   hand: InformationCard[];
   abilityUsed: boolean;
   privateInspectionResults: string[];
-  presentedCardId?: string;
+  presentedCardIds: string[];
   vote?: string;
+  shadowbanned: boolean;
+  analystPrediction?: string;
+  protectedFromShadowban: boolean;
+  mutedNextRound: boolean;
+  accountBreached: boolean;
 }
 
 export interface HostGameState extends PublicGameState {

@@ -1,6 +1,8 @@
 import {
   DEFAULT_DISCUSSION_SECONDS,
+  DEFAULT_INFORMATION_AUDIT_SECONDS,
   DEFAULT_ROLE_ABILITY_SECONDS,
+  DEFAULT_SHADOWBAN_SECONDS,
   DEFAULT_VOTING_SECONDS,
   GamePhase,
   InformationType,
@@ -9,7 +11,7 @@ import {
   type PlayerGameState
 } from '@shadowban/shared';
 
-import { getAlgorithmById, getCrisisForRound, getEvidenceForCrisis } from '../services/contentService.js';
+import { getAlgorithmById, getCrisisForRound, getEvidenceForCrisis, getRoleById } from '../services/contentService.js';
 
 export class RoundManager {
   startRound(game: GameState): void {
@@ -25,10 +27,14 @@ export class RoundManager {
 
     for (const playerState of Object.values(game.playerStates)) {
       playerState.vote = undefined;
-      playerState.presentedCardId = undefined;
+      playerState.presentedCardIds = [];
       playerState.abilityUsed = false;
       playerState.privateInspectionResults = [];
       playerState.hand = [];
+      // Clear mute status at start of round
+      if (playerState.mutedNextRound) {
+        playerState.mutedNextRound = false;
+      }
     }
   }
 
@@ -95,7 +101,9 @@ export class RoundManager {
     // Determine the selected response from votes
     const voteCounts: Record<string, number> = {};
     for (const vote of Object.values(game.votes)) {
-      voteCounts[vote] = (voteCounts[vote] || 0) + 1;
+      if (vote) {
+        voteCounts[vote] = (voteCounts[vote] || 0) + 1;
+      }
     }
 
     let selectedResponseId: string | null = null;
@@ -111,12 +119,64 @@ export class RoundManager {
     // Score based on whether the selected response matches the correct response
     if (selectedResponseId === crisis.correctResponseId) {
       game.societyScore += 1;
+      game.societyWins += 1;
     } else {
       game.algorithmScore += 1;
+      game.algorithmWins += 1;
+    }
+
+    // Check Analyst predictions for shadowban protection
+    for (const playerState of Object.values(game.playerStates)) {
+      if (playerState.analystPrediction === selectedResponseId) {
+        playerState.protectedFromShadowban = true;
+      }
+      // Clear analyst prediction for next round
+      playerState.analystPrediction = undefined;
     }
   }
 
+  startShadowbanPhase(game: GameState): void {
+    game.phase = GamePhase.SHADOWBAN;
+    game.phaseEndsAt = Date.now() + DEFAULT_SHADOWBAN_SECONDS * 1000;
+  }
+
+  resolveShadowban(game: GameState): void {
+    game.phase = GamePhase.INFORMATION_AUDIT;
+    game.phaseEndsAt = Date.now() + DEFAULT_INFORMATION_AUDIT_SECONDS * 1000;
+  }
+
   startNextRound(game: GameState): void {
+    const playerCount = game.players.length;
+    const requiredWins = playerCount <= 6 ? 2 : 3; // 6-player: best of 3 (2 wins), 8-player: best of 5 (3 wins)
+
+    // Check for best-of victory
+    if (game.societyWins >= requiredWins || game.algorithmWins >= requiredWins) {
+      game.phase = GamePhase.GAME_END;
+      game.phaseEndsAt = undefined;
+      return;
+    }
+
+    // Check for elimination victory (handled in GameManager, but we can also check here)
+    let algorithmPlayersRemaining = 0;
+    let societyPlayersRemaining = 0;
+
+    for (const [playerId, playerState] of Object.entries(game.playerStates)) {
+      if (!playerState.shadowbanned) {
+        const role = getRoleById(playerState.roleId);
+        if (role.faction === 'ALGORITHM') {
+          algorithmPlayersRemaining++;
+        } else {
+          societyPlayersRemaining++;
+        }
+      }
+    }
+
+    if (algorithmPlayersRemaining === 0 || societyPlayersRemaining === 0) {
+      game.phase = GamePhase.GAME_END;
+      game.phaseEndsAt = undefined;
+      return;
+    }
+
     if (game.currentRound >= game.totalRounds) {
       game.phase = GamePhase.GAME_END;
       game.phaseEndsAt = undefined;

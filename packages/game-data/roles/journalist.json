@@ -2,5 +2,9 @@
   "id": "journalist",
   "name": "Journalist",
   "faction": "SOCIETY",
-  "description": "Investigates and reports information to the table."
+  "description": "Investigates and reports information to the table.",
+  "abilityName": "On Record",
+  "abilityDescription": "Once per round, choose another player. Their answer to 'Which crisis option do you support?' is shown to everyone. They may lie.",
+  "abilityType": "once_per_round",
+  "abilityTiming": "role_ability_phase"
 }
