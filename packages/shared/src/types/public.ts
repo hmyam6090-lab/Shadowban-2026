@@ -1,10 +1,10 @@
 import type { AlgorithmSetup, Crisis, Faction, GamePhase, InformationCard, Player, RoleDefinition } from './domain';
 
-export type PublicPlayer = Pick<Player, 'id' | 'name' | 'isHost' | 'connected' | 'ready'>;
+export type PublicPlayer = Pick<Player, 'id' | 'name' | 'isHost' | 'connected' | 'ready' | 'avatar'>;
 
 export type PublicInformationCard = Pick<InformationCard, 'id' | 'crisisId' | 'type' | 'title' | 'text'>;
 
-export type CrisisPublicDTO = Omit<Crisis, 'correctResponseId' | 'evidenceIds' | 'noiseIds'>;
+export type CrisisPublicDTO = Omit<Crisis, 'evidenceIds' | 'noiseIds'>;
 
 export interface PublicGameState {
   gameId: string;
@@ -19,6 +19,8 @@ export interface PublicGameState {
   algorithmScore: number;
   phaseEndsAt?: number;
   publicEvidence: string[];
+  votes?: Record<string, string>;
+  shadowbanVotes?: Record<string, string>;
   societyWins: number;
   algorithmWins: number;
 }

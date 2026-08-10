@@ -6,5 +6,5 @@
   "abilityName": "Closed Circuit",
   "abilityDescription": "Once per round, choose one player. That player chooses another player. For 30 seconds, only those two may speak. Everyone else must listen.",
   "abilityType": "once_per_round",
-  "abilityTiming": "role_ability_phase"
+  "abilityTiming": "anytime"
 }

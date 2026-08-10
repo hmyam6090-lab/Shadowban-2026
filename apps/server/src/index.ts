@@ -24,13 +24,14 @@ app.get('/api/health', healthController);
 app.post('/api/games', (request: Request, response: Response) => {
   const hostName = typeof request.body?.hostName === 'string' ? request.body.hostName.trim() : '';
   const totalRounds = Number.isInteger(request.body?.totalRounds) ? Number(request.body.totalRounds) : undefined;
+  const avatar = typeof request.body?.avatar === 'string' ? request.body.avatar : undefined;
 
   if (!hostName) {
     response.status(400).json({ error: 'hostName is required' });
     return;
   }
 
-  const game = gameManager.createGame(hostName, totalRounds ?? 6);
+  const game = gameManager.createGame(hostName, totalRounds ?? 6, avatar);
 
   response.status(201).json({
     gameId: game.gameId,
@@ -42,6 +43,7 @@ app.post('/api/games', (request: Request, response: Response) => {
 app.post('/api/games/:gameCode/join', (request: Request, response: Response) => {
   const gameCode = String(request.params.gameCode).trim().toUpperCase();
   const playerName = typeof request.body?.playerName === 'string' ? request.body.playerName.trim() : '';
+  const avatar = typeof request.body?.avatar === 'string' ? request.body.avatar : undefined;
 
   if (!playerName) {
     response.status(400).json({ error: 'playerName is required' });
@@ -49,7 +51,7 @@ app.post('/api/games/:gameCode/join', (request: Request, response: Response) => 
   }
 
   try {
-    const player = gameManager.joinGame(gameCode, playerName);
+    const player = gameManager.joinGame(gameCode, playerName, avatar);
     const game = gameManager.getGameByCode(gameCode);
 
     response.status(201).json({

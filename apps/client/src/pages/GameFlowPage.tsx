@@ -3,6 +3,8 @@ import { useEffect, useState } from "react";
 import { GamePhase } from "@shadowban/shared";
 
 import { CrisisCard } from "../components/game/CrisisCard.js";
+import { CircularTimer } from "../components/game/CircularTimer.js";
+import { FloatingAbilitiesPanel } from "../components/game/FloatingAbilitiesPanel.js";
 import { GameHeader } from "../components/game/GameHeader.js";
 import { InformationCard } from "../components/game/InformationCard.js";
 import { PhaseIndicator } from "../components/game/PhaseIndicator.js";
@@ -10,6 +12,9 @@ import { PlayerList } from "../components/game/PlayerList.js";
 import { ResponseCard } from "../components/game/ResponseCard.js";
 import { ScoreBoard } from "../components/game/ScoreBoard.js";
 import { Timer } from "../components/game/Timer.js";
+import { AvatarVotingDisplay } from "../components/game/AvatarVotingDisplay.js";
+import { AvatarVoteSelector } from "../components/game/AvatarVoteSelector.js";
+import { ChatPanel } from "../components/game/ChatPanel.js";
 import { socket } from "../socket/socket.js";
 import { useAppStore } from "../stores/appStore.js";
 
@@ -29,10 +34,6 @@ const phaseCopy: Record<GamePhase, { title: string; subtitle: string }> = {
   DEAL_INFORMATION: {
     title: "Deal Information",
     subtitle: "Private cards are being dealt.",
-  },
-  ROLE_ABILITY: {
-    title: "Role Ability",
-    subtitle: "Hidden abilities can be used now.",
   },
   DISCUSSION: {
     title: "Discussion",
@@ -80,6 +81,15 @@ export function GameFlowPage() {
     string | null
   >(null);
   const [shadowbanVote, setShadowbanVote] = useState<string | null>(null);
+  const [chatMessages, setChatMessages] = useState<
+    Array<{
+      playerId: string;
+      playerName: string;
+      playerAvatar?: string;
+      message: string;
+      timestamp: number;
+    }>
+  >([]);
 
   useEffect(() => {
     if (!session) {
@@ -125,6 +135,30 @@ export function GameFlowPage() {
     socket.emit("shadowban:vote", { targetPlayerId });
   };
 
+  const handleSendChatMessage = (message: string) => {
+    if (session) {
+      socket.emit("chat:send", { message });
+    }
+  };
+
+  useEffect(() => {
+    const handleChatMessage = (data: {
+      playerId: string;
+      playerName: string;
+      playerAvatar?: string;
+      message: string;
+      timestamp: number;
+    }) => {
+      setChatMessages((prev) => [...prev, data]);
+    };
+
+    socket.on("chat:message", handleChatMessage);
+
+    return () => {
+      socket.off("chat:message", handleChatMessage);
+    };
+  }, []);
+
   if (!publicState) {
     return (
       <section className="card">
@@ -149,8 +183,13 @@ export function GameFlowPage() {
       />
       <div className="game-topline">
         <PhaseIndicator phase={phase} />
-        <Timer endsAt={publicState.phaseEndsAt} />
       </div>
+
+      {publicState.phaseEndsAt && (
+        <div className="timer-overlay">
+          <CircularTimer endsAt={publicState.phaseEndsAt} />
+        </div>
+      )}
 
       <div className="game-grid">
         <div className="game-main card">
@@ -177,7 +216,10 @@ export function GameFlowPage() {
             </div>
           ) : null}
 
-          {phase === "ROLE_ABILITY" ? (
+          {phase === "DISCUSSION" ||
+          phase === "VOTING" ||
+          phase === "DEAL_INFORMATION" ||
+          phase === "EVIDENCE_PREPARATION" ? (
             <div className="role-panel">
               <h3>{privateState?.role.name ?? "Unassigned Role"}</h3>
               <p>
@@ -735,61 +777,17 @@ export function GameFlowPage() {
 
           {phase === "SHADOWBAN" ? (
             <div className="shadowban-panel">
-              <h3>Shadowban Phase</h3>
-              <p className="soft-copy">
-                Vote to eliminate a player you suspect is working for the
-                Algorithm.
-              </p>
-              {privateState?.shadowbanned ? (
-                <p className="soft-copy">
-                  You are shadowbanned and cannot vote.
-                </p>
-              ) : (
-                <>
-                  <div className="player-select">
-                    <label htmlFor="shadowban-target">
-                      Select a player to shadowban:
-                    </label>
-                    <select
-                      id="shadowban-target"
-                      onChange={(e) => setShadowbanVote(e.target.value)}
-                      value={shadowbanVote || ""}
-                    >
-                      <option value="">-- Select a player --</option>
-                      {publicState.players
-                        .filter((p) => p.id !== session?.playerId)
-                        .filter((p) => {
-                          const playerState = privateState;
-                          // Can't shadowban protected players
-                          return !playerState?.protectedFromShadowban;
-                        })
-                        .map((player) => (
-                          <option key={player.id} value={player.id}>
-                            {player.name}
-                          </option>
-                        ))}
-                    </select>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        shadowbanVote && handleShadowbanVote(shadowbanVote)
-                      }
-                      disabled={!shadowbanVote}
-                    >
-                      Submit Shadowban Vote
-                    </button>
-                  </div>
-                  {shadowbanVote && (
-                    <p className="soft-copy">
-                      Your vote has been submitted for:{" "}
-                      {
-                        publicState.players.find((p) => p.id === shadowbanVote)
-                          ?.name
-                      }
-                    </p>
-                  )}
-                </>
-              )}
+              <AvatarVoteSelector
+                players={publicState.players.filter(
+                  (p) => p.id !== session?.playerId,
+                )}
+                votes={publicState.shadowbanVotes}
+                onVote={(targetPlayerId) => {
+                  setShadowbanVote(targetPlayerId);
+                  socket.emit("shadowban:vote", { targetPlayerId });
+                }}
+                disabled={privateState?.shadowbanned}
+              />
             </div>
           ) : null}
 
@@ -852,79 +850,21 @@ export function GameFlowPage() {
             </div>
           ) : null}
 
-          {phase === "RESOLUTION" ? (
+          {phase === "RESOLUTION" && crisis ? (
             <div className="resolution-panel">
               <h3>Round resolved</h3>
+              <AvatarVotingDisplay
+                responses={crisis.responses}
+                votes={publicState.votes}
+                players={publicState.players}
+                selectedResponseId={selectedResponseId}
+              />
               <ScoreBoard
                 societyScore={publicState.societyScore}
                 algorithmScore={publicState.algorithmScore}
                 societyWins={publicState.societyWins}
                 algorithmWins={publicState.algorithmWins}
               />
-
-              {votingResults && votingResults.length > 0 && (
-                <div className="voting-results">
-                  <h4>Voting Results</h4>
-                  {votingResults.map((result) => {
-                    const response = currentCrisis?.responses.find(
-                      (r) => r.id === result.responseId,
-                    );
-                    return (
-                      <div key={result.responseId} className="vote-result">
-                        <span>{response?.label || result.responseId}:</span>
-                        <span className="vote-count">{result.votes} votes</span>
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-
-              {roundAudit && (
-                <div className="information-audit">
-                  <h4>Information Audit</h4>
-                  <p className="soft-copy">
-                    What information was available vs. what you saw:
-                  </p>
-
-                  {roundAudit.playerFeedSummary &&
-                    roundAudit.playerFeedSummary.length > 0 && (
-                      <div className="player-feeds">
-                        <h5>Player Information Feeds</h5>
-                        {roundAudit.playerFeedSummary.map((summary) => (
-                          <div key={summary.playerId} className="player-feed">
-                            <p className="eyebrow">{summary.playerName}</p>
-                            <p>Cards seen: {summary.cardsSeen}</p>
-                            <p>
-                              Supporting correct response:{" "}
-                              {summary.supportingCorrect}
-                            </p>
-                            <p>
-                              Supporting incorrect responses:{" "}
-                              {summary.supportingIncorrect}
-                            </p>
-                            <p>Noise cards: {summary.noiseSeen}</p>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-
-                  {roundAudit.availableEvidence &&
-                    roundAudit.availableEvidence.length > 0 && (
-                      <div className="available-evidence">
-                        <h5>All Available Evidence</h5>
-                        <div className="card-stack">
-                          {roundAudit.availableEvidence.map((card) => (
-                            <InformationCard
-                              key={card.id}
-                              card={card}
-                              accent="public"
-                            />
-                          ))}
-                        </div>
-                      </div>
-                    )}
-                </div>
-              )}
             </div>
           ) : null}
 
@@ -971,8 +911,28 @@ export function GameFlowPage() {
               </div>
             </article>
           ) : null}
+          {(phase === "DISCUSSION" || phase === "SHADOWBAN") && (
+            <ChatPanel
+              messages={chatMessages}
+              onSendMessage={handleSendChatMessage}
+              disabled={privateState?.shadowbanned}
+              currentPhase={copy.title}
+            />
+          )}
         </aside>
       </div>
+
+      <FloatingAbilitiesPanel
+        roleName={privateState?.role.name}
+        abilityName={privateState?.role.abilityName}
+        abilityDescription={privateState?.role.abilityDescription}
+        canUseAbility={!privateState?.abilityUsed}
+        onUseAbility={() => {
+          // Handle ability activation - this will need to be implemented based on role
+          console.log("Ability activated");
+        }}
+        disabled={privateState?.shadowbanned || !privateState?.role.abilityName}
+      />
     </section>
   );
 }

@@ -6,5 +6,5 @@
   "abilityName": "For You",
   "abilityDescription": "Once per round, choose one player. That player secretly receives one additional Information Card. They are not told why. Other players are not told who received it.",
   "abilityType": "once_per_round",
-  "abilityTiming": "role_ability_phase"
+  "abilityTiming": "anytime"
 }

@@ -5,6 +5,7 @@ export interface Player {
   isHost: boolean;
   connected: boolean;
   ready: boolean;
+  avatar?: string;
 }
 
 export enum Faction {
@@ -17,7 +18,6 @@ export enum GamePhase {
   CRISIS_REVEAL = 'CRISIS_REVEAL',
   EVIDENCE_PREPARATION = 'EVIDENCE_PREPARATION',
   DEAL_INFORMATION = 'DEAL_INFORMATION',
-  ROLE_ABILITY = 'ROLE_ABILITY',
   DISCUSSION = 'DISCUSSION',
   VOTING = 'VOTING',
   RESOLUTION = 'RESOLUTION',

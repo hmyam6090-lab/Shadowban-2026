@@ -39,25 +39,25 @@ export async function checkHealth(): Promise<boolean> {
   return payload.status === 'ok';
 }
 
-export async function createGame(hostName: string, totalRounds?: number): Promise<{ gameId: string; gameCode: string; playerId: string }> {
+export async function createGame(hostName: string, totalRounds?: number, avatar?: string): Promise<{ gameId: string; gameCode: string; playerId: string }> {
   const response = await fetch(`${serverUrl}/api/games`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
     },
-    body: JSON.stringify({ hostName, totalRounds })
+    body: JSON.stringify({ hostName, totalRounds, avatar })
   });
 
   return readJson<{ gameId: string; gameCode: string; playerId: string }>(response);
 }
 
-export async function joinGame(gameCode: string, playerName: string): Promise<{ gameId: string; playerId: string }> {
+export async function joinGame(gameCode: string, playerName: string, avatar?: string): Promise<{ gameId: string; playerId: string }> {
   const response = await fetch(`${serverUrl}/api/games/${gameCode}/join`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json'
     },
-    body: JSON.stringify({ playerName })
+    body: JSON.stringify({ playerName, avatar })
   });
 
   return readJson<{ gameId: string; playerId: string }>(response);

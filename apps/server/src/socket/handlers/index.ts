@@ -18,7 +18,7 @@ function broadcastGameState(io: Server<ClientToServerEvents, ServerToClientEvent
     io.to(player.socketId).emit('player:private-state', gameManager.getPrivateState(gameId, player.id));
   }
 
-  if (game.currentCrisisId && [GamePhase.CRISIS_REVEAL, GamePhase.EVIDENCE_PREPARATION, GamePhase.DEAL_INFORMATION, GamePhase.ROLE_ABILITY, GamePhase.DISCUSSION, GamePhase.VOTING, GamePhase.RESOLUTION, GamePhase.SHADOWBAN, GamePhase.INFORMATION_AUDIT, GamePhase.GAME_END].includes(game.phase)) {
+  if (game.currentCrisisId && [GamePhase.CRISIS_REVEAL, GamePhase.EVIDENCE_PREPARATION, GamePhase.DEAL_INFORMATION, GamePhase.DISCUSSION, GamePhase.VOTING, GamePhase.RESOLUTION, GamePhase.SHADOWBAN, GamePhase.INFORMATION_AUDIT, GamePhase.GAME_END].includes(game.phase)) {
     io.to(gameId).emit('crisis:revealed', {
       crisis: getCrisisById(game.currentCrisisId)
     });
@@ -290,6 +290,41 @@ export function registerSocketHandlers(io: Server<ClientToServerEvents, ServerTo
 
         // Broadcast updated game state
         broadcastGameState(io, gameId);
+      } catch {
+        return;
+      }
+    });
+
+    socket.on('chat:send', ({ message }) => {
+      try {
+        const { gameId, playerId } = socket.data;
+
+        if (!gameId || !playerId) {
+          return;
+        }
+
+        const game = gameManager.getGameOrThrow(gameId);
+        const player = game.players.find((entry) => entry.id === playerId);
+
+        if (!player) {
+          return;
+        }
+
+        const playerState = game.playerStates[playerId];
+        
+        // Check if player is shadowbanned
+        if (playerState?.shadowbanned) {
+          return;
+        }
+
+        // Broadcast chat message to all players in the game
+        io.to(gameId).emit('chat:message', {
+          playerId: player.id,
+          playerName: player.name,
+          playerAvatar: player.avatar,
+          message,
+          timestamp: Date.now()
+        });
       } catch {
         return;
       }

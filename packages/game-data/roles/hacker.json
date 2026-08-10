@@ -6,5 +6,5 @@
   "abilityName": "Account Breach",
   "abilityDescription": "Once per game, choose another player. Learn their role, one random Information Card from their hand, and their current Analyst prediction if they have one. They are told ACCOUNT BREACHED but not what you learned.",
   "abilityType": "once_per_game",
-  "abilityTiming": "role_ability_phase"
+  "abilityTiming": "anytime"
 }

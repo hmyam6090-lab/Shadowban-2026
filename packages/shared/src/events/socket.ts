@@ -80,6 +80,18 @@ export interface InfluencerMutePayload {
   targetPlayerId: string;
 }
 
+export interface ChatSendPayload {
+  message: string;
+}
+
+export interface ChatMessagePayload {
+  playerId: string;
+  playerName: string;
+  playerAvatar?: string;
+  message: string;
+  timestamp: number;
+}
+
 export interface GameEndedPayload {
   winner: 'SOCIETY' | 'ALGORITHM';
   societyScore: number;
@@ -99,6 +111,7 @@ export interface ClientToServerEvents {
   'shadowban:vote': (payload: ShadowbanVotePayload) => void;
   'influencer:mute': (payload: InfluencerMutePayload) => void;
   'host:advance': () => void;
+  'chat:send': (payload: ChatSendPayload) => void;
 }
 
 export interface ServerToClientEvents {
@@ -115,6 +128,7 @@ export interface ServerToClientEvents {
   'shadowban:resolved': (payload: ShadowbanResolvedPayload) => void;
   'round:audit': (payload: RoundAuditPayload) => void;
   'game:ended': (payload: GameEndedPayload) => void;
+  'chat:message': (payload: ChatMessagePayload) => void;
 }
 
 export type InterServerEvents = Record<string, never>;

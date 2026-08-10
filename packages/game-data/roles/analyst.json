@@ -6,5 +6,5 @@
   "abilityName": "Final Call",
   "abilityDescription": "Once per game, publicly commit to one crisis option before voting. Your vote locks to that option. If correct, you are protected from the next Shadowban.",
   "abilityType": "once_per_game",
-  "abilityTiming": "anytime_before_discussion"
+  "abilityTiming": "anytime"
 }

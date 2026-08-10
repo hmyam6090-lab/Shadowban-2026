@@ -8,7 +8,7 @@ export class GameManager {
   private readonly games = new Map<string, GameState>();
   private readonly roundManager = new RoundManager();
 
-  createGame(hostName?: string, totalRounds = DEFAULT_TOTAL_ROUNDS): GameState {
+  createGame(hostName?: string, totalRounds = DEFAULT_TOTAL_ROUNDS, avatar?: string): GameState {
     const gameId = crypto.randomUUID();
 
     const game: GameState = {
@@ -32,14 +32,14 @@ export class GameManager {
     this.games.set(gameId, game);
 
     if (hostName) {
-      const host = this.addPlayer(game, hostName, true);
+      const host = this.addPlayer(game, hostName, true, avatar);
       game.hostPlayerId = host.id;
     }
 
     return game;
   }
 
-  joinGame(gameCode: string, playerName: string): Player {
+  joinGame(gameCode: string, playerName: string, avatar?: string): Player {
     const game = this.getGameByCode(gameCode);
 
     if (game.phase !== GamePhase.LOBBY) {
@@ -54,7 +54,7 @@ export class GameManager {
       throw new Error('Player name must be unique.');
     }
 
-    return this.addPlayer(game, playerName, false);
+    return this.addPlayer(game, playerName, false, avatar);
   }
 
   startGame(gameId: string): void {
@@ -85,9 +85,6 @@ export class GameManager {
         this.roundManager.dealInformation(game);
         break;
       case GamePhase.DEAL_INFORMATION:
-        this.roundManager.startRolePhase(game);
-        break;
-      case GamePhase.ROLE_ABILITY:
         this.roundManager.startDiscussion(game);
         break;
       case GamePhase.DISCUSSION:
@@ -261,11 +258,8 @@ export class GameManager {
 
     const role = getRoleById(playerState.roleId);
 
-    // Check ability timing
-    if (role.abilityTiming === AbilityTiming.ROLE_ABILITY_PHASE && game.phase !== GamePhase.ROLE_ABILITY) {
-      throw new Error('This ability can only be used during the Role Ability phase.');
-    }
-    if (role.abilityTiming === AbilityTiming.ANYTIME_BEFORE_DISCUSSION && game.phase !== GamePhase.ROLE_ABILITY && game.phase !== GamePhase.DEAL_INFORMATION) {
+    // Check ability timing - abilities can now be used anytime
+    if (role.abilityTiming === AbilityTiming.ANYTIME_BEFORE_DISCUSSION && game.phase !== GamePhase.DEAL_INFORMATION) {
       throw new Error('This ability can only be used before discussion begins.');
     }
 
@@ -544,14 +538,17 @@ export class GameManager {
     return game;
   }
 
-  private addPlayer(game: GameState, playerName: string, isHost: boolean): Player {
+  private addPlayer(game: GameState, playerName: string, isHost: boolean, avatar?: string): Player {
+    const playerId = crypto.randomUUID();
+
     const player: Player = {
-      id: crypto.randomUUID(),
+      id: playerId,
       name: playerName,
       socketId: '',
       isHost,
       connected: true,
-      ready: false
+      ready: false,
+      avatar
     };
 
     game.players.push(player);

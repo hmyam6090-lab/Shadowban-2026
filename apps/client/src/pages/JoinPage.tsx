@@ -1,16 +1,27 @@
-import { useState, type FormEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState, useEffect, type FormEvent } from "react";
+import { useNavigate } from "react-router-dom";
 
-import { joinGame } from '../services/api.js';
-import { useAppStore } from '../stores/appStore.js';
+import { joinGame } from "../services/api.js";
+import { useAppStore } from "../stores/appStore.js";
+import { AvatarCanvas } from "../components/common/AvatarCanvas.js";
 
 export function JoinPage() {
   const navigate = useNavigate();
   const setSession = useAppStore((state) => state.setSession);
-  const [gameCode, setGameCode] = useState('');
-  const [playerName, setPlayerName] = useState('');
+  const [gameCode, setGameCode] = useState("");
+  const [playerName, setPlayerName] = useState("");
+  const [avatar, setAvatar] = useState<string | null>(null);
+  const [showAvatarCanvas, setShowAvatarCanvas] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+
+  // Load saved avatar from localStorage
+  useEffect(() => {
+    const savedAvatar = localStorage.getItem("shadowban_avatar");
+    if (savedAvatar) {
+      setAvatar(savedAvatar);
+    }
+  }, []);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -19,24 +30,34 @@ export function JoinPage() {
 
     try {
       const code = gameCode.trim().toUpperCase();
-      const result = await joinGame(code, playerName.trim());
+      const result = await joinGame(
+        code,
+        playerName.trim(),
+        avatar || undefined,
+      );
 
       setSession({
         gameId: result.gameId,
         gameCode: code,
         playerId: result.playerId,
         playerName: playerName.trim(),
-        isHost: false
+        isHost: false,
       });
 
       navigate(`/lobby/${code}`);
     } catch (joinError) {
       setError(
-        joinError instanceof Error ? joinError.message : 'Unable to join game'
+        joinError instanceof Error ? joinError.message : "Unable to join game",
       );
     } finally {
       setLoading(false);
     }
+  }
+
+  function handleAvatarSave(avatarData: string) {
+    setAvatar(avatarData);
+    localStorage.setItem("shadowban_avatar", avatarData);
+    setShowAvatarCanvas(false);
   }
 
   return (
@@ -61,6 +82,27 @@ export function JoinPage() {
             placeholder="Sarah"
           />
         </label>
+        <label>
+          Avatar
+          <div className="avatar-section">
+            {avatar ? (
+              <img
+                src={avatar}
+                alt="Your avatar"
+                className="avatar-preview"
+                onClick={() => setShowAvatarCanvas(true)}
+              />
+            ) : (
+              <button
+                type="button"
+                onClick={() => setShowAvatarCanvas(true)}
+                className="secondary-btn"
+              >
+                Create Avatar
+              </button>
+            )}
+          </div>
+        </label>
         {error ? <p className="error-text">{error}</p> : null}
         <button
           type="submit"
@@ -70,9 +112,27 @@ export function JoinPage() {
             playerName.trim().length === 0
           }
         >
-          {loading ? 'Joining...' : 'Join Game'}
+          {loading ? "Joining..." : "Join Game"}
         </button>
       </form>
+      {showAvatarCanvas && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <h3>Create Your Avatar</h3>
+            <AvatarCanvas
+              onSave={handleAvatarSave}
+              initialData={avatar || undefined}
+            />
+            <button
+              type="button"
+              onClick={() => setShowAvatarCanvas(false)}
+              className="secondary-btn"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
     </section>
   );
 }

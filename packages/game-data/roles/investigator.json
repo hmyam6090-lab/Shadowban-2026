@@ -6,5 +6,5 @@
   "abilityName": "Crosscheck",
   "abilityDescription": "Once per round, choose two other players. Learn whether they are on the SAME SIDE or DIFFERENT SIDES. You are not told which side either belongs to.",
   "abilityType": "once_per_round",
-  "abilityTiming": "role_ability_phase"
+  "abilityTiming": "anytime"
 }
