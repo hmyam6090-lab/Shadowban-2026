@@ -378,9 +378,90 @@ label {
 }
 
 .sidebar-header {
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
   padding-bottom: 1rem;
   border-bottom: 1px solid var(--border);
+}
+
+.sidebar-players {
+  margin-bottom: 1rem;
+  padding: 0.5rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: var(--radius-sm);
+}
+
+.sidebar-players h4 {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin: 0 0 0.5rem 0;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.sidebar-player-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.25rem 0;
+  font-size: 0.8rem;
+}
+
+.player-name-small {
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.9);
+}
+
+.host-badge-small {
+  font-size: 0.6rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.1rem 0.3rem;
+  background: rgba(24, 169, 87, 0.2);
+  color: var(--society-green);
+  border-radius: 4px;
+}
+
+.sidebar-voting {
+  margin-bottom: 1rem;
+  padding: 0.5rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: var(--radius-sm);
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.sidebar-voting h4 {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin: 0 0 0.5rem 0;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.vote-status {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.7);
+  margin: 0 0 0.5rem 0;
+}
+
+.sidebar-responses {
+  margin-bottom: 1rem;
+  padding: 0.5rem;
+  background: rgba(255, 255, 255, 0.05);
+  border-radius: var(--radius-sm);
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.sidebar-responses h4 {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  margin: 0 0 0.5rem 0;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
 .sidebar-header.card h2 {
@@ -1081,7 +1162,7 @@ label {
 }
 
 .player-panel {
-  padding: 1rem;
+  padding: 0.5rem;
   border: 2px solid var(--border);
   transition: all 200ms ease;
 }
@@ -1095,8 +1176,8 @@ label {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 0.75rem;
-  padding-bottom: 0.5rem;
+  margin-bottom: 0.5rem;
+  padding-bottom: 0.25rem;
   border-bottom: 1px solid var(--border);
 }
 
@@ -1108,7 +1189,7 @@ label {
 
 .player-name {
   font-family: var(--display-font);
-  font-size: 1rem;
+  font-size: 0.85rem;
   font-weight: 600;
   margin: 0;
   color: #f6f7fb;
@@ -1511,8 +1592,9 @@ label {
   overflow-y: auto;
   padding: 1rem;
   gap: 1rem;
-  grid-template-columns: minmax(0, 1.3fr) minmax(320px, 0.7fr);
+  grid-template-columns: 2fr 1fr;
   max-height: 100vh;
+  position: relative;
 }
 
 .game-header {
@@ -1661,30 +1743,30 @@ label {
 .game-main,
 .game-side {
   display: grid;
-  gap: 1.2rem;
+  gap: 0.8rem;
 }
 
 .game-side {
   align-content: start;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 0.6rem;
 }
 
 .game-main-header {
   margin-bottom: 0.3rem;
   padding-bottom: 0.6rem;
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
 }
 
 .header-left {
-  flex: 1;
+  margin-bottom: 0.75rem;
 }
 
-.header-right {
+.header-buttons {
   display: flex;
   align-items: center;
   gap: 0.75rem;
+  flex-wrap: wrap;
 }
 
 .game-main-header h2 {
@@ -1717,9 +1799,21 @@ label {
   display: flex;
   align-items: center;
   padding: 0.5rem;
-  background: var(--surface-soft);
-  border-radius: var(--radius-sm);
-  border: 1px solid var(--accent);
+}
+
+.timer-bar-container {
+  width: 200px;
+  height: 8px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.timer-bar {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), #8b5cf6);
+  border-radius: 4px;
+  transition: width 0.1s linear;
 }
 
 .phase-ready-btn {
@@ -2428,7 +2522,6 @@ label {
 .crisis-card-vertical {
   flex: 0 0 auto;
   width: 100%;
-  aspect-ratio: 63 / 100;
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
@@ -2726,7 +2819,7 @@ label {
 .card-stack,
 .response-list {
   display: grid;
-  gap: 0.85rem;
+  gap: 0.4rem;
 }
 
 .info-card.public {
@@ -2941,18 +3034,19 @@ label {
 .score-board {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 0.85rem;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
 }
 
 .score-board div {
-  border-radius: 16px;
-  padding: 0.85rem;
+  border-radius: 8px;
+  padding: 0.5rem;
   background: linear-gradient(
     180deg,
-    rgba(60, 60, 85, 0.9),
-    rgba(45, 45, 65, 0.85)
+    rgba(24, 169, 87, 0.15),
+    rgba(24, 169, 87, 0.05)
   );
-  border: 3px solid rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(24, 169, 87, 0.3);
   box-shadow: var(--shadow-card);
 }
 
@@ -2967,10 +3061,10 @@ label {
 }
 
 .score-board strong {
-  font-size: clamp(1.7rem, 3vw, 2.2rem);
+  font-size: 1.2rem;
   line-height: 1;
   font-family: var(--display-font);
-  font-weight: 800;
+  font-weight: 700;
 }
 
 .role-panel,
@@ -4048,7 +4142,7 @@ label {
   gap: 0.85rem;
   padding: 1rem;
   box-shadow: var(--shadow-strong);
-  max-height: 400px;
+  max-height: 600px;
 }
 
 .chat-header {
@@ -4081,8 +4175,8 @@ label {
   overflow-y: auto;
   display: grid;
   gap: 0.75rem;
-  padding-right: 0.5rem;
-  max-height: 250px;
+  padding: 0.5rem 0;
+  max-height: 450px;
 }
 
 .chat-empty {
@@ -4156,6 +4250,22 @@ label {
   margin: 0;
   line-height: 1.4;
   word-wrap: break-word;
+}
+
+.chat-card-image {
+  width: 60px;
+  height: 95px;
+  object-fit: cover;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: transform 200ms ease, box-shadow 200ms ease;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+}
+
+.chat-card-image:hover {
+  transform: scale(1.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+  border-color: var(--accent);
 }
 
 .chat-input-form {

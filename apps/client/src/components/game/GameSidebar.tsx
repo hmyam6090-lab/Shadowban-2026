@@ -1,5 +1,12 @@
 import { GamePhase } from "@shadowban/shared";
-import type { RoleDefinition } from "@shadowban/shared";
+import type {
+  RoleDefinition,
+  PublicGameState,
+  PrivatePlayerState,
+  CrisisPublicDTO,
+} from "@shadowban/shared";
+import { ScoreBoard } from "./ScoreBoard.js";
+import { ResponseCard } from "./ResponseCard.js";
 
 export interface GameSidebarProps {
   currentPhase: GamePhase;
@@ -10,6 +17,12 @@ export interface GameSidebarProps {
   onUseAbility?: () => void;
   activeTab?: "phases" | "role";
   onTabChange?: (tab: "phases" | "role") => void;
+  publicState?: PublicGameState;
+  privateState?: PrivatePlayerState;
+  currentCrisis?: CrisisPublicDTO;
+  selectedVote?: string | null;
+  onVote?: (responseId: string) => void;
+  hasVoted?: boolean;
 }
 
 export function GameSidebar({
@@ -21,6 +34,12 @@ export function GameSidebar({
   onUseAbility,
   activeTab = "phases",
   onTabChange,
+  publicState,
+  privateState,
+  currentCrisis,
+  selectedVote,
+  onVote,
+  hasVoted,
 }: GameSidebarProps) {
   const sections = [
     { id: "lobby", label: "Lobby", phase: GamePhase.LOBBY },
@@ -59,6 +78,34 @@ export function GameSidebar({
         <h3>SHADOWBAN</h3>
         <p className="sidebar-subtitle">Game Manager</p>
       </div>
+
+      <ScoreBoard
+        societyScore={publicState?.societyScore || 0}
+        algorithmScore={publicState?.algorithmScore || 0}
+      />
+
+      <div className="sidebar-players">
+        <h4>Players</h4>
+        {publicState?.players.map((player) => (
+          <div key={player.id} className="sidebar-player-item">
+            <span className="player-name-small">{player.name}</span>
+            {player.isHost && <span className="host-badge-small">Host</span>}
+          </div>
+        ))}
+      </div>
+
+      {currentPhase === GamePhase.CRISIS_REVEAL && currentCrisis && (
+        <div className="sidebar-responses">
+          <h4>Responses</h4>
+          {currentCrisis.responses.map((response) => (
+            <ResponseCard
+              key={response.id}
+              response={response}
+              disabled={true}
+            />
+          ))}
+        </div>
+      )}
 
       <div className="sidebar-tabs">
         <button

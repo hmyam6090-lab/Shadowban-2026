@@ -190,6 +190,11 @@ export function GameFlowPage() {
     }
   };
 
+  const handleCardClick = (cardId: string) => {
+    // Handle card click - could open a modal or show full card
+    console.log("Card clicked:", cardId);
+  };
+
   useEffect(() => {
     const handleChatMessage = (data: {
       playerId: string;
@@ -197,6 +202,8 @@ export function GameFlowPage() {
       playerAvatar?: string;
       message: string;
       timestamp: number;
+      cardId?: string;
+      cardImage?: string;
     }) => {
       setChatMessages((prev) => [...prev, data]);
     };
@@ -223,14 +230,36 @@ export function GameFlowPage() {
       console.log("Ability result:", data);
     };
 
+    const handleEvidencePresented = (data: {
+      playerId: string;
+      card: { id: string; image?: string };
+    }) => {
+      // Add presented evidence as a chat message with card image
+      const player = publicState?.players.find((p) => p.id === data.playerId);
+      setChatMessages((prev) => [
+        ...prev,
+        {
+          playerId: data.playerId,
+          playerName: player?.name || "Unknown",
+          playerAvatar: player?.avatar,
+          message: "",
+          timestamp: Date.now(),
+          cardId: data.card.id,
+          cardImage: data.card.image || "",
+        },
+      ]);
+    };
+
     socket.on("chat:message", handleChatMessage);
     socket.on("shadowban:resolved", handleShadowbanResolved);
     socket.on("ability:result", handleAbilityResult);
+    socket.on("evidence:presented", handleEvidencePresented);
 
     return () => {
       socket.off("chat:message", handleChatMessage);
       socket.off("shadowban:resolved", handleShadowbanResolved);
       socket.off("ability:result", handleAbilityResult);
+      socket.off("evidence:presented", handleEvidencePresented);
     };
   }, []);
 
@@ -273,6 +302,12 @@ export function GameFlowPage() {
         }}
         activeTab={activeSidebarTab}
         onTabChange={setActiveSidebarTab}
+        publicState={publicState}
+        privateState={privateState}
+        currentCrisis={currentCrisis}
+        selectedVote={selectedVote}
+        onVote={handleVote}
+        hasVoted={hasVoted}
       />
       <div className="game-main-container">
         <div className="game-grid">
@@ -287,10 +322,13 @@ export function GameFlowPage() {
                   </p>
                 )}
               </div>
-              <div className="header-right">
+              <div className="header-buttons">
                 {publicState.phaseEndsAt && (
                   <div className="timer-box">
-                    <Timer endsAt={publicState.phaseEndsAt} />
+                    <Timer
+                      endsAt={publicState.phaseEndsAt}
+                      onExpire={() => isHost && socket.emit("host:advance")}
+                    />
                   </div>
                 )}
                 <button
@@ -317,12 +355,27 @@ export function GameFlowPage() {
             ) : null}
 
             {phase === "VOTING" && crisis ? (
-              <CrisisCard
-                crisis={crisis}
-                showResponses={true}
-                onResponseSelect={setSelectedResponseId}
-                selectedResponseId={selectedResponseId}
-              />
+              <CrisisCard crisis={crisis} showResponses={false} />
+            ) : null}
+
+            {phase === "VOTING" ? (
+              <div className="vote-panel">
+                <h3>Vote privately for the best response.</h3>
+                {hasVoted ? (
+                  <p className="soft-copy">Your vote has been submitted.</p>
+                ) : (
+                  <p className="soft-copy">Select a response to vote.</p>
+                )}
+                {crisis?.responses.map((response) => (
+                  <ResponseCard
+                    key={response.id}
+                    response={response}
+                    selected={selectedVote === response.id}
+                    onClick={() => !hasVoted && handleVote(response.id)}
+                    disabled={hasVoted}
+                  />
+                ))}
+              </div>
             ) : null}
 
             {phase === "EVIDENCE_PREPARATION" ? (
@@ -439,26 +492,6 @@ export function GameFlowPage() {
               </div>
             ) : null}
 
-            {phase === "VOTING" ? (
-              <div className="vote-panel">
-                <h3>Vote privately for the best response.</h3>
-                {hasVoted ? (
-                  <p className="soft-copy">Your vote has been submitted.</p>
-                ) : (
-                  <p className="soft-copy">Select a response to vote.</p>
-                )}
-                {crisis?.responses.map((response) => (
-                  <ResponseCard
-                    key={response.id}
-                    response={response}
-                    selected={selectedVote === response.id}
-                    onClick={() => !hasVoted && handleVote(response.id)}
-                    disabled={hasVoted}
-                  />
-                ))}
-              </div>
-            ) : null}
-
             {phase === "SHADOWBAN" ? (
               <div className="shadowban-panel">
                 <AvatarVoteSelector
@@ -492,22 +525,12 @@ export function GameFlowPage() {
                   players={publicState.players}
                   selectedResponseId={selectedResponseId}
                 />
-                <ScoreBoard
-                  societyScore={publicState.societyScore}
-                  algorithmScore={publicState.algorithmScore}
-                  societyWins={publicState.societyWins}
-                  algorithmWins={publicState.algorithmWins}
-                />
               </div>
             ) : null}
 
             {phase === "GAME_END" ? (
               <div className="resolution-panel">
                 <h3>Game complete</h3>
-                <ScoreBoard
-                  societyScore={publicState.societyScore}
-                  algorithmScore={publicState.algorithmScore}
-                />
               </div>
             ) : null}
 
@@ -519,39 +542,13 @@ export function GameFlowPage() {
           </div>
 
           <aside className="game-side stack">
-            <ScoreBoard
-              societyScore={publicState.societyScore}
-              algorithmScore={publicState.algorithmScore}
+            <ChatPanel
+              messages={chatMessages}
+              onSendMessage={handleSendChatMessage}
+              disabled={privateState?.shadowbanned}
+              currentPhase={copy.title}
+              onCardClick={handleCardClick}
             />
-            <article className="card">
-              <h3>Players</h3>
-              <PlayerList
-                players={publicState.players}
-                hostPlayerId={publicState.hostPlayerId}
-              />
-            </article>
-            {crisis ? (
-              <article className="card">
-                <h3>Responses</h3>
-                <div className="response-list">
-                  {crisis.responses.map((response) => (
-                    <ResponseCard
-                      key={response.id}
-                      response={response}
-                      selected={false}
-                    />
-                  ))}
-                </div>
-              </article>
-            ) : null}
-            {(phase === "DISCUSSION" || phase === "SHADOWBAN") && (
-              <ChatPanel
-                messages={chatMessages}
-                onSendMessage={handleSendChatMessage}
-                disabled={privateState?.shadowbanned}
-                currentPhase={copy.title}
-              />
-            )}
           </aside>
         </div>
       </div>

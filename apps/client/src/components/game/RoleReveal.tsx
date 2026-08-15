@@ -72,9 +72,6 @@ export function RoleReveal({ role, onComplete }: RoleRevealProps) {
                     <span className="ability-icon">⚡</span>
                     <span className="ability-name">{role.abilityName}</span>
                   </div>
-                  <p className="ability-description">
-                    {role.abilityDescription}
-                  </p>
                 </div>
               )}
 

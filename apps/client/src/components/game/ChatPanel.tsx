@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from "react";
 
 export interface ChatMessage {
   playerId: string;
@@ -6,6 +6,8 @@ export interface ChatMessage {
   playerAvatar?: string;
   message: string;
   timestamp: number;
+  cardId?: string;
+  cardImage?: string;
 }
 
 export interface ChatPanelProps {
@@ -13,14 +15,21 @@ export interface ChatPanelProps {
   onSendMessage: (message: string) => void;
   disabled?: boolean;
   currentPhase?: string;
+  onCardClick?: (cardId: string) => void;
 }
 
-export function ChatPanel({ messages, onSendMessage, disabled = false, currentPhase }: ChatPanelProps) {
-  const [inputValue, setInputValue] = useState('');
+export function ChatPanel({
+  messages,
+  onSendMessage,
+  disabled = false,
+  currentPhase,
+  onCardClick,
+}: ChatPanelProps) {
+  const [inputValue, setInputValue] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
 
   useEffect(() => {
@@ -31,13 +40,13 @@ export function ChatPanel({ messages, onSendMessage, disabled = false, currentPh
     e.preventDefault();
     if (inputValue.trim() && !disabled) {
       onSendMessage(inputValue.trim());
-      setInputValue('');
+      setInputValue("");
     }
   };
 
   const formatTime = (timestamp: number) => {
     const date = new Date(timestamp);
-    return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   };
 
   return (
@@ -46,7 +55,7 @@ export function ChatPanel({ messages, onSendMessage, disabled = false, currentPh
         <h4>Chat</h4>
         {currentPhase && <span className="chat-phase">{currentPhase}</span>}
       </div>
-      
+
       <div className="chat-messages">
         {messages.length === 0 ? (
           <p className="chat-empty">No messages yet. Start the conversation!</p>
@@ -55,7 +64,11 @@ export function ChatPanel({ messages, onSendMessage, disabled = false, currentPh
             <div key={`${msg.playerId}-${index}`} className="chat-message">
               <div className="chat-message-avatar">
                 {msg.playerAvatar ? (
-                  <img src={msg.playerAvatar} alt={msg.playerName} className="chat-avatar-img" />
+                  <img
+                    src={msg.playerAvatar}
+                    alt={msg.playerName}
+                    className="chat-avatar-img"
+                  />
                 ) : (
                   <div className="chat-avatar-placeholder">
                     {msg.playerName.charAt(0).toUpperCase()}
@@ -65,9 +78,20 @@ export function ChatPanel({ messages, onSendMessage, disabled = false, currentPh
               <div className="chat-message-content">
                 <div className="chat-message-header">
                   <span className="chat-message-name">{msg.playerName}</span>
-                  <span className="chat-message-time">{formatTime(msg.timestamp)}</span>
+                  <span className="chat-message-time">
+                    {formatTime(msg.timestamp)}
+                  </span>
                 </div>
-                <p className="chat-message-text">{msg.message}</p>
+                {msg.cardImage ? (
+                  <img
+                    src={msg.cardImage}
+                    alt="Information Card"
+                    className="chat-card-image"
+                    onClick={() => msg.cardId && onCardClick?.(msg.cardId)}
+                  />
+                ) : (
+                  <p className="chat-message-text">{msg.message}</p>
+                )}
               </div>
             </div>
           ))
@@ -80,7 +104,7 @@ export function ChatPanel({ messages, onSendMessage, disabled = false, currentPh
           type="text"
           value={inputValue}
           onChange={(e) => setInputValue(e.target.value)}
-          placeholder={disabled ? 'Chat disabled' : 'Type a message...'}
+          placeholder={disabled ? "Chat disabled" : "Type a message..."}
           disabled={disabled}
           maxLength={200}
           className="chat-input"
