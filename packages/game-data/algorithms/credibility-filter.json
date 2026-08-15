@@ -1,0 +1,13 @@
+{
+  "id": "credibility-filter",
+  "name": "Credibility Filter",
+  "description": "Filters information based on source and format. Boosts official and technical content while filtering out unverified social media posts.",
+  "boostTags": ["Official", "Technical"],
+  "filterTags": ["Viral", "Emotional"],
+  "distribution": {
+    "response1": 5,
+    "response2": 7,
+    "response3": 6,
+    "noise": 4
+  }
+}

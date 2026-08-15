@@ -23,7 +23,8 @@ export class RoundManager {
     game.phase = GamePhase.CRISIS_REVEAL;
     game.phaseEndsAt = undefined;
     game.publicEvidence = [];
-    game.votes = {};
+    game.votes = game.votes || {};
+    game.shadowbanVotes = game.shadowbanVotes || {};
 
     for (const playerState of Object.values(game.playerStates)) {
       playerState.vote = undefined;
@@ -31,10 +32,17 @@ export class RoundManager {
       playerState.abilityUsed = false;
       playerState.privateInspectionResults = [];
       playerState.hand = [];
+      playerState.phaseReady = false;
       // Clear mute status at start of round
       if (playerState.mutedNextRound) {
         playerState.mutedNextRound = false;
       }
+    }
+  }
+
+  resetPhaseReady(game: GameState): void {
+    for (const playerState of Object.values(game.playerStates)) {
+      playerState.phaseReady = false;
     }
   }
 
@@ -73,8 +81,8 @@ export class RoundManager {
     }
   }
 
-  startRolePhase(game: GameState): void {
-    game.phase = GamePhase.ROLE_ABILITY;
+  startAbilityPhase(game: GameState): void {
+    game.phase = GamePhase.ABILITY;
     game.phaseEndsAt = Date.now() + DEFAULT_ROLE_ABILITY_SECONDS * 1000;
   }
 
@@ -141,8 +149,48 @@ export class RoundManager {
   }
 
   resolveShadowban(game: GameState): void {
-    game.phase = GamePhase.INFORMATION_AUDIT;
-    game.phaseEndsAt = Date.now() + DEFAULT_INFORMATION_AUDIT_SECONDS * 1000;
+    // Calculate who got shadowbanned based on votes
+    const voteCounts: Record<string, number> = {};
+    
+    for (const vote of Object.values(game.shadowbanVotes || {})) {
+      if (vote) {
+        voteCounts[vote] = (voteCounts[vote] || 0) + 1;
+      }
+    }
+
+    // Find the player with the most votes
+    let maxVotes = 0;
+    let shadowbannedPlayerId: string | null = null;
+    
+    for (const [playerId, count] of Object.entries(voteCounts)) {
+      if (count > maxVotes) {
+        maxVotes = count;
+        shadowbannedPlayerId = playerId;
+      }
+    }
+
+    // Mark the player as shadowbanned
+    let shadowbannedPlayerName: string | null = null;
+    if (shadowbannedPlayerId) {
+      const playerState = game.playerStates[shadowbannedPlayerId];
+      const player = game.players.find(p => p.id === shadowbannedPlayerId);
+      if (playerState && !playerState.protectedFromShadowban) {
+        playerState.shadowbanned = true;
+        shadowbannedPlayerName = player?.name || null;
+      }
+    }
+
+    // Clear shadowban votes for next round
+    game.shadowbanVotes = {};
+
+    // Store shadowban result for broadcasting
+    game.shadowbanResult = {
+      shadowbannedPlayerId,
+      shadowbannedPlayerName
+    };
+
+    // Go directly to next round instead of INFORMATION_AUDIT phase
+    this.startNextRound(game);
   }
 
   startNextRound(game: GameState): void {

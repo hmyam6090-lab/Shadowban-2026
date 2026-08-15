@@ -2,9 +2,9 @@
   "id": "journalist",
   "name": "Journalist",
   "faction": "SOCIETY",
-  "description": "Investigates and reports information to the table.",
+  "description": "Investigates and reports information to the table. You can force transparency and hold players accountable for their stated positions.",
   "abilityName": "On Record",
-  "abilityDescription": "Once per round, choose another player. Their answer to 'Which crisis option do you support?' is shown to everyone. They may lie.",
+  "abilityDescription": "Once per round, choose another player. Their answer to 'Which crisis option do you support?' is shown to everyone. They may lie, but their statement becomes public record for the group to evaluate.",
   "abilityType": "once_per_round",
-  "abilityTiming": "anytime"
+  "abilityTiming": "anytime_before_discussion"
 }

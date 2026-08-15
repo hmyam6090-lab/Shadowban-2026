@@ -2,7 +2,7 @@ import type { Server } from 'socket.io';
 
 import { GamePhase, type ClientToServerEvents, type InterServerEvents, type ServerToClientEvents, type SocketData } from '@shadowban/shared';
 
-import { getCrisisById, getEvidenceForCrisis } from '../../services/contentService.js';
+import { getCrisisById, getEvidenceForCrisis, getRoleById } from '../../services/contentService.js';
 import { gameManager } from '../../services/gameService.js';
 
 function broadcastGameState(io: Server<ClientToServerEvents, ServerToClientEvents, InterServerEvents, SocketData>, gameId: string): void {
@@ -18,7 +18,7 @@ function broadcastGameState(io: Server<ClientToServerEvents, ServerToClientEvent
     io.to(player.socketId).emit('player:private-state', gameManager.getPrivateState(gameId, player.id));
   }
 
-  if (game.currentCrisisId && [GamePhase.CRISIS_REVEAL, GamePhase.EVIDENCE_PREPARATION, GamePhase.DEAL_INFORMATION, GamePhase.DISCUSSION, GamePhase.VOTING, GamePhase.RESOLUTION, GamePhase.SHADOWBAN, GamePhase.INFORMATION_AUDIT, GamePhase.GAME_END].includes(game.phase)) {
+  if (game.currentCrisisId && [GamePhase.CRISIS_REVEAL, GamePhase.EVIDENCE_PREPARATION, GamePhase.DEAL_INFORMATION, GamePhase.DISCUSSION, GamePhase.VOTING, GamePhase.RESOLUTION, GamePhase.SHADOWBAN, GamePhase.GAME_END].includes(game.phase)) {
     io.to(gameId).emit('crisis:revealed', {
       crisis: getCrisisById(game.currentCrisisId)
     });
@@ -68,18 +68,14 @@ function broadcastGameState(io: Server<ClientToServerEvents, ServerToClientEvent
     io.to(gameId).emit('shadowban:started', { endsAt: game.phaseEndsAt });
   }
 
-  if (game.phase === GamePhase.INFORMATION_AUDIT && typeof game.phaseEndsAt === 'number') {
-    const audit = gameManager.getRoundAudit(gameId);
-    io.to(gameId).emit('round:audit', {
-      availableEvidence: audit.availableEvidence.map((card) => ({
-        id: card.id,
-        crisisId: card.crisisId,
-        type: card.type,
-        title: card.title,
-        text: card.text
-      })),
-      playerFeedSummary: audit.playerFeedSummaries
+  if (game.shadowbanResult) {
+    io.to(gameId).emit('shadowban:resolved', {
+      shadowbannedPlayerId: game.shadowbanResult.shadowbannedPlayerId,
+      influencerMutedPlayerId: null,
+      shadowbannedPlayerName: game.shadowbanResult.shadowbannedPlayerName || undefined
     });
+    // Clear the result after broadcasting
+    game.shadowbanResult = undefined;
   }
 
   if (game.phase === GamePhase.GAME_END) {
@@ -140,6 +136,21 @@ export function registerSocketHandlers(io: Server<ClientToServerEvents, ServerTo
       }
     });
 
+    socket.on('phase:ready', () => {
+      try {
+        const { gameId, playerId } = socket.data;
+
+        if (!gameId || !playerId) {
+          return;
+        }
+
+        gameManager.setPlayerPhaseReady(gameId, playerId, true);
+        broadcastGameState(io, gameId);
+      } catch {
+        return;
+      }
+    });
+
     socket.on('game:start', () => {
       try {
         const { gameId, playerId } = socket.data;
@@ -155,6 +166,26 @@ export function registerSocketHandlers(io: Server<ClientToServerEvents, ServerTo
         }
 
         gameManager.startGame(gameId);
+        broadcastGameState(io, gameId);
+      } catch {
+        return;
+      }
+    });
+
+    socket.on('game:leave', () => {
+      try {
+        const { gameId, playerId } = socket.data;
+
+        if (!gameId || !playerId) {
+          return;
+        }
+
+        // Remove player from game
+        gameManager.removePlayer(gameId, playerId);
+        socket.leave(gameId);
+        socket.data.gameId = undefined;
+        socket.data.playerId = undefined;
+
         broadcastGameState(io, gameId);
       } catch {
         return;
@@ -252,11 +283,35 @@ export function registerSocketHandlers(io: Server<ClientToServerEvents, ServerTo
           return;
         }
 
+        const game = gameManager.getGameOrThrow(gameId);
+        const playerState = game.playerStates[playerId];
+        const role = playerState?.roleId ? getRoleById(playerState.roleId) : null;
+
         gameManager.activateRoleAbility(gameId, playerId, targetPlayerId, targetCardId, additionalTargetId, responseId);
+
+        // Emit ability result to the player who used it
+        if (role) {
+          socket.emit('ability:result', {
+            playerId,
+            roleId: role.id,
+            abilityName: role.abilityName || 'Unknown',
+            result: 'Ability activated successfully. Check your private state for details.',
+            details: { targetPlayerId }
+          });
+        }
 
         // Broadcast updated game state
         broadcastGameState(io, gameId);
-      } catch {
+      } catch (error) {
+        const { playerId } = socket.data;
+        // Send error to the player
+        socket.emit('ability:result', {
+          playerId: playerId || 'unknown',
+          roleId: 'unknown',
+          abilityName: 'Unknown',
+          result: error instanceof Error ? error.message : 'Failed to activate ability',
+          details: null
+        });
         return;
       }
     });

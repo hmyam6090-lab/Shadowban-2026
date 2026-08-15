@@ -1,6 +1,6 @@
 import { DEFAULT_TOTAL_ROUNDS, AbilityTiming, AbilityType, Faction, GamePhase, InformationType, MAX_PLAYERS, MIN_PLAYERS, type GameState, type InformationCard, type Player, type PrivatePlayerState, type PublicGameState } from '@shadowban/shared';
 
-import { getCrisisById, getEvidenceForCrisis, getRoleById } from '../services/contentService.js';
+import { getCrisisById, getEvidenceForCrisis, getRoleById, getAllRoles, getRandomRole } from '../services/contentService.js';
 import { RoundManager } from './RoundManager.js';
 import { generateGameCode } from '../utils/gameCode.js';
 
@@ -26,7 +26,8 @@ export class GameManager {
       playerStates: {},
       shadowbanVotes: {},
       societyWins: 0,
-      algorithmWins: 0
+      algorithmWins: 0,
+      publicAnnouncements: []
     };
 
     this.games.set(gameId, game);
@@ -66,6 +67,22 @@ export class GameManager {
       throw new Error('At least 2 connected players are required.');
     }
 
+    // Assign random roles to all players
+    const allRoles = getAllRoles();
+    const shuffledRoles = [...allRoles].sort(() => Math.random() - 0.5);
+
+    game.players.forEach((player,	index) => {
+      const playerState = game.playerStates[player.id];
+      if (playerState) {
+        // Assign a random role (with replacement if more players than roles)
+        const roleIndex = index % shuffledRoles.length;
+        const role = shuffledRoles[roleIndex];
+        if (role) {
+          playerState.roleId = role.id;
+        }
+      }
+    });
+
     game.currentRound = 1;
     game.algorithmScore = 0;
     game.societyScore = 0;
@@ -85,6 +102,9 @@ export class GameManager {
         this.roundManager.dealInformation(game);
         break;
       case GamePhase.DEAL_INFORMATION:
+        this.roundManager.startAbilityPhase(game);
+        break;
+      case GamePhase.ABILITY:
         this.roundManager.startDiscussion(game);
         break;
       case GamePhase.DISCUSSION:
@@ -99,12 +119,12 @@ export class GameManager {
       case GamePhase.SHADOWBAN:
         this.roundManager.resolveShadowban(game);
         break;
-      case GamePhase.INFORMATION_AUDIT:
-        this.roundManager.startNextRound(game);
-        break;
       default:
         break;
     }
+
+    // Reset phase ready status when phase changes
+    this.roundManager.resetPhaseReady(game);
   }
 
   submitVote(gameId: string, playerId: string, responseId: string): void {
@@ -307,6 +327,18 @@ export class GameManager {
         throw new Error('Target player not found.');
       }
 
+      const targetPlayer = game.players.find(p => p.id === targetPlayerId);
+      const journalistPlayer = game.players.find(p => p.id === playerId);
+
+      // Add public announcement for all players
+      game.publicAnnouncements.push({
+        id: crypto.randomUUID(),
+        type: 'journalist_claim',
+        message: `📰 JOURNALIST ${journalistPlayer?.name || 'Unknown'} has asked ${targetPlayer?.name || 'Unknown'} to answer a question truthfully about their hand.`,
+        timestamp: Date.now(),
+        playerId: playerId
+      });
+
       // Store the public claim - this will be broadcast to all players
       // The target player's response is stored in a special field
       playerState.privateInspectionResults.push(`JOURNALIST_CLAIM:${targetPlayerId}:${responseId || 'NO_RESPONSE'}`);
@@ -335,10 +367,24 @@ export class GameManager {
         throw new Error('One or both target players not found.');
       }
 
+      const targetPlayer1 = game.players.find(p => p.id === targetPlayerId);
+      const targetPlayer2 = game.players.find(p => p.id === additionalTargetId);
+      const investigatorPlayer = game.players.find(p => p.id === playerId);
+
       const role1 = getRoleById(targetState1.roleId);
       const role2 = getRoleById(targetState2.roleId);
 
       const sameSide = role1.faction === role2.faction;
+
+      // Add public announcement
+      game.publicAnnouncements.push({
+        id: crypto.randomUUID(),
+        type: 'ability_used',
+        message: `🔍 INVESTIGATOR ${investigatorPlayer?.name || 'Unknown'} has crosschecked ${targetPlayer1?.name || 'Unknown'} and ${targetPlayer2?.name || 'Unknown'}. They now know if these players are on the same side.`,
+        timestamp: Date.now(),
+        playerId: playerId
+      });
+
       playerState.privateInspectionResults.push(`CROSSCHECK:${targetPlayerId}:${additionalTargetId}:${sameSide ? 'SAME_SIDE' : 'DIFFERENT_SIDES'}`);
       playerState.abilityUsed = true;
     }
@@ -347,6 +393,18 @@ export class GameManager {
       if (!targetPlayerId) {
         throw new Error('Target player required for Echo Chamber ability.');
       }
+
+      const targetPlayer = game.players.find(p => p.id === targetPlayerId);
+      const echoPlayer = game.players.find(p => p.id === playerId);
+
+      // Add public announcement
+      game.publicAnnouncements.push({
+        id: crypto.randomUUID(),
+        type: 'ability_used',
+        message: `🔇 ECHO CHAMBER: ${echoPlayer?.name || 'Unknown'} has created a private channel with ${targetPlayer?.name || 'Unknown'}. Only they may speak for 30 seconds.`,
+        timestamp: Date.now(),
+        playerId: playerId
+      });
 
       // This ability requires UI state management for communication restrictions
       // For now, we'll store the restriction in player state
@@ -364,10 +422,22 @@ export class GameManager {
         throw new Error('Target player not found.');
       }
 
+      const targetPlayer = game.players.find(p => p.id === targetPlayerId);
+      const hackerPlayer = game.players.find(p => p.id === playerId);
+
       const targetRole = getRoleById(targetState.roleId);
       const randomCardIndex = targetState.hand.length > 0 ? Math.floor(Math.random() * targetState.hand.length) : -1;
       const randomCardId = randomCardIndex >= 0 ? targetState.hand[randomCardIndex] : 'NO_CARD';
       const analystPrediction = targetState.analystPrediction || 'NO_PREDICTION';
+
+      // Add public announcement
+      game.publicAnnouncements.push({
+        id: crypto.randomUUID(),
+        type: 'ability_used',
+        message: `💻 HACKER ${hackerPlayer?.name || 'Unknown'} has breached ${targetPlayer?.name || 'Unknown'}'s account. They now know their role and private information.`,
+        timestamp: Date.now(),
+        playerId: playerId
+      });
 
       playerState.privateInspectionResults.push(`ACCOUNT_BREACH:${targetPlayerId}:${targetRole.id}:${randomCardId}:${analystPrediction}`);
       targetState.accountBreached = true;
@@ -383,6 +453,9 @@ export class GameManager {
       if (!targetState) {
         throw new Error('Target player not found.');
       }
+
+      const targetPlayer = game.players.find(p => p.id === targetPlayerId);
+      const algorithmPlayer = game.players.find(p => p.id === playerId);
 
       // Give the target an extra card from the crisis evidence
       const crisis = game.currentCrisisId ? getCrisisById(game.currentCrisisId) : undefined;
@@ -401,6 +474,16 @@ export class GameManager {
       if (!randomCard) {
         throw new Error('Failed to select a random card.');
       }
+
+      // Add public announcement
+      game.publicAnnouncements.push({
+        id: crypto.randomUUID(),
+        type: 'ability_used',
+        message: `🤖 ALGORITHM ${algorithmPlayer?.name || 'Unknown'} has fed ${targetPlayer?.name || 'Unknown'} an additional information card.`,
+        timestamp: Date.now(),
+        playerId: playerId
+      });
+
       targetState.hand.push(randomCard.id);
       playerState.abilityUsed = true;
     }
@@ -415,6 +498,24 @@ export class GameManager {
     player.ready = ready;
   }
 
+  setPlayerPhaseReady(gameId: string, playerId: string, ready: boolean): void {
+    const game = this.getGame(gameId);
+    const playerState = game.playerStates[playerId];
+    if (!playerState) {
+      throw new Error('Player state not found.');
+    }
+    playerState.phaseReady = ready;
+
+    // Check if all connected players are ready
+    const connectedPlayers = game.players.filter(p => p.connected);
+    const allReady = connectedPlayers.every(p => game.playerStates[p.id]?.phaseReady);
+
+    // If all ready, advance phase
+    if (allReady && connectedPlayers.length > 0) {
+      this.advancePhase(gameId);
+    }
+  }
+
   attachPlayerSocket(gameId: string, playerId: string, socketId: string): void {
     const game = this.getGame(gameId);
     const player = this.getPlayer(game, playerId);
@@ -426,6 +527,26 @@ export class GameManager {
     const game = this.getGame(gameId);
     const player = this.getPlayer(game, playerId);
     player.connected = false;
+  }
+
+  removePlayer(gameId: string, playerId: string): void {
+    const game = this.getGame(gameId);
+    const playerIndex = game.players.findIndex(p => p.id === playerId);
+    
+    if (playerIndex === -1) {
+      throw new Error('Player not found.');
+    }
+
+    game.players.splice(playerIndex, 1);
+    delete game.playerStates[playerId];
+
+    // If host leaves, assign new host
+    if (game.hostPlayerId === playerId && game.players.length > 0) {
+      const newHost = game.players[0];
+      if (newHost) {
+        game.hostPlayerId = newHost.id;
+      }
+    }
   }
 
   getGameByCode(gameCode: string): GameState {
@@ -457,9 +578,10 @@ export class GameManager {
       societyScore: game.societyScore,
       algorithmScore: game.algorithmScore,
       phaseEndsAt: game.phaseEndsAt,
-      publicEvidence: [...game.publicEvidence],
+      publicEvidence: [],
       societyWins: game.societyWins,
-      algorithmWins: game.algorithmWins
+      algorithmWins: game.algorithmWins,
+      publicAnnouncements: [...game.publicAnnouncements]
     };
   }
 
@@ -514,7 +636,8 @@ export class GameManager {
       analystPrediction: playerState.analystPrediction,
       protectedFromShadowban: playerState.protectedFromShadowban,
       mutedNextRound: playerState.mutedNextRound,
-      accountBreached: playerState.accountBreached
+      accountBreached: playerState.accountBreached,
+      phaseReady: playerState.phaseReady
     };
   }
 
@@ -557,11 +680,10 @@ export class GameManager {
       game.hostPlayerId = player.id;
     }
 
-    const defaultRole = isHost ? 'official' : '';
-
+    // All players start with no role - roles assigned randomly when game starts
     game.playerStates[player.id] = {
       playerId: player.id,
-      roleId: defaultRole,
+      roleId: '',
       hand: [],
       presentedCardIds: [],
       abilityUsed: false,
@@ -570,7 +692,8 @@ export class GameManager {
       analystPrediction: undefined,
       protectedFromShadowban: false,
       mutedNextRound: false,
-      accountBreached: false
+      accountBreached: false,
+      phaseReady: false
     };
 
     return player;

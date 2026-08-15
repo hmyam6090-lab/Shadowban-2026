@@ -1,0 +1,62 @@
+{
+  "id": "ai-deepfake",
+  "name": "AI Deepfake Scandal",
+  "description": "A viral video shows a public figure making shocking statements. It may be real, or it may be a deepfake.",
+  "responses": [
+    {
+      "id": "denounce",
+      "label": "Denounce the Statement",
+      "description": "Publicly condemn the statement as harmful."
+    },
+    {
+      "id": "verify",
+      "label": "Verify Authenticity First",
+      "description": "Wait for forensic verification before taking action."
+    },
+    {
+      "id": "legal-action",
+      "label": "Take Legal Action",
+      "description": "Pursue legal remedies against the content creator."
+    }
+  ],
+  "correctResponseId": "denounce",
+  "evidenceIds": [
+    "DPF-01",
+    "DPF-02",
+    "DPF-03",
+    "DPF-04",
+    "DPF-05",
+    "DPF-06",
+    "DPF-07",
+    "DPF-08",
+    "DPF-09",
+    "DPF-10",
+    "DPF-11",
+    "DPF-12",
+    "DPF-13",
+    "DPF-14",
+    "DPF-15",
+    "DPF-16",
+    "DPF-17",
+    "DPF-18",
+    "DPF-19",
+    "DPF-20",
+    "DPF-21",
+    "DPF-22",
+    "DPF-23",
+    "DPF-24",
+    "DPF-25",
+    "DPF-26",
+    "DPF-27",
+    "DPF-28",
+    "DPF-29",
+    "DPF-30"
+  ],
+  "noiseIds": [
+    "DPF-09",
+    "DPF-15",
+    "DPF-19",
+    "DPF-25",
+    "DPF-28"
+  ]
+}

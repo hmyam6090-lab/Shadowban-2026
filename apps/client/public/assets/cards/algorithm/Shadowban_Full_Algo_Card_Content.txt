@@ -1,0 +1,23 @@
+﻿ALGO-1 - ENGAGEMENT ENGINE:
+BOOST (VISIBLE): Emotional, Viral, Visual
+FILTER OUT (SHADOWBANNED): Official, Technical
+
+
+ALGO-2 - AUTHORITY ENGINE
+BOOST (VISIBLE): Official, Technical
+FILTER OUT (SHADOWBANNED): Viral, Opinion
+
+
+ALGO-3 - AI CURATOR
+BOOST (VISIBLE): AI, Technical
+FILTER OUT (SHADOWBANNED): Opinion, Emotional, Local
+
+
+ALGO-4 - HUMAN STORIES
+BOOST (VISIBLE): Opinion, Emotional, Local
+FILTER OUT (SHADOWBANNED): AI, Technical
+
+
+ALGO-5 - EVIDENCE MODE
+BOOST (VISIBLE): Technical, Visual, Official
+FILTER OUT (SHADOWBANNED): Opinion, Emotional

@@ -67,14 +67,53 @@ export function getCrisisForRound(roundNumber: number): Crisis {
     throw new Error('No crises available.');
   }
 
-  const crisisIndex = (roundNumber - 1) % crises.length;
-  const crisis = crises[crisisIndex];
+  // Random crisis selection
+  const randomIndex = Math.floor(Math.random() * crises.length);
+  const crisis = crises[randomIndex];
 
   if (!crisis) {
     throw new Error('No crisis available for the requested round.');
   }
 
   return crisis;
+}
+
+export function getRandomCrisis(): Crisis {
+  const crises = getContentCatalog().crises;
+
+  if (crises.length === 0) {
+    throw new Error('No crises available.');
+  }
+
+  const randomIndex = Math.floor(Math.random() * crises.length);
+  const crisis = crises[randomIndex];
+
+  if (!crisis) {
+    throw new Error('No crisis available.');
+  }
+
+  return crisis;
+}
+
+export function getAllRoles(): RoleDefinition[] {
+  return getContentCatalog().roles;
+}
+
+export function getRandomRole(): RoleDefinition {
+  const roles = getAllRoles();
+
+  if (roles.length === 0) {
+    throw new Error('No roles available.');
+  }
+
+  const randomIndex = Math.floor(Math.random() * roles.length);
+  const role = roles[randomIndex];
+
+  if (!role) {
+    throw new Error('No role available.');
+  }
+
+  return role;
 }
 
 export function getAlgorithmById(algorithmId?: string): AlgorithmSetup {

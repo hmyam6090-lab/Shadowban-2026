@@ -74,6 +74,15 @@ export interface ShadowbanStartedPayload {
 export interface ShadowbanResolvedPayload {
   shadowbannedPlayerId: string | null;
   influencerMutedPlayerId: string | null;
+  shadowbannedPlayerName?: string | null;
+}
+
+export interface AbilityResultPayload {
+  playerId: string;
+  roleId: string;
+  abilityName: string;
+  result: string;
+  details?: any;
 }
 
 export interface InfluencerMutePayload {
@@ -105,6 +114,8 @@ export interface ClientToServerEvents {
   'game:join': (payload: JoinGamePayload) => void;
   'game:ready': () => void;
   'game:start': () => void;
+  'game:leave': () => void;
+  'phase:ready': () => void;
   'role:activate': (payload: RoleActivatePayload) => void;
   'evidence:present': (payload: { cardId: string }) => void;
   'vote:submit': (payload: VoteSubmitPayload) => void;
@@ -129,6 +140,7 @@ export interface ServerToClientEvents {
   'round:audit': (payload: RoundAuditPayload) => void;
   'game:ended': (payload: GameEndedPayload) => void;
   'chat:message': (payload: ChatMessagePayload) => void;
+  'ability:result': (payload: AbilityResultPayload) => void;
 }
 
 export type InterServerEvents = Record<string, never>;

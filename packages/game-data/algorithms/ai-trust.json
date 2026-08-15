@@ -1,0 +1,13 @@
+{
+  "id": "ai-trust",
+  "name": "AI Trust",
+  "description": "Prioritizes AI-generated summaries and technical content while filtering out emotional and opinion-based posts.",
+  "boostTags": ["AI", "Technical"],
+  "filterTags": ["Emotional", "Opinion"],
+  "distribution": {
+    "response1": 6,
+    "response2": 5,
+    "response3": 7,
+    "noise": 5
+  }
+}

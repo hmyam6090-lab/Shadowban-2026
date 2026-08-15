@@ -18,11 +18,11 @@ export enum GamePhase {
   CRISIS_REVEAL = 'CRISIS_REVEAL',
   EVIDENCE_PREPARATION = 'EVIDENCE_PREPARATION',
   DEAL_INFORMATION = 'DEAL_INFORMATION',
+  ABILITY = 'ABILITY',
   DISCUSSION = 'DISCUSSION',
   VOTING = 'VOTING',
   RESOLUTION = 'RESOLUTION',
   SHADOWBAN = 'SHADOWBAN',
-  INFORMATION_AUDIT = 'INFORMATION_AUDIT',
   GAME_END = 'GAME_END'
 }
 
@@ -52,7 +52,12 @@ export interface InformationCard {
   crisisId: string;
   type: InformationType;
   title: string;
+  subtitle?: string;
   text: string;
+  source?: string;
+  sourceType?: string;
+  reliability?: number;
+  tags?: string[];
   supportsResponseId?: string;
 }
 
@@ -104,6 +109,7 @@ export interface PlayerGameState {
   protectedFromShadowban: boolean;
   mutedNextRound: boolean;
   accountBreached: boolean;
+  phaseReady: boolean;
 }
 
 export interface GameState {
@@ -118,11 +124,22 @@ export interface GameState {
   currentAlgorithmId?: string;
   societyScore: number;
   algorithmScore: number;
+  societyWins: number;
+  algorithmWins: number;
   phaseEndsAt?: number;
   publicEvidence: string[];
   votes: Record<string, string>;
-  playerStates: Record<string, PlayerGameState>;
   shadowbanVotes: Record<string, string>;
-  societyWins: number;
-  algorithmWins: number;
+  shadowbanResult?: {
+    shadowbannedPlayerId: string | null;
+    shadowbannedPlayerName: string | null;
+  };
+  publicAnnouncements: Array<{
+    id: string;
+    type: 'journalist_claim' | 'ability_used' | 'system';
+    message: string;
+    timestamp: number;
+    playerId?: string;
+  }>;
+  playerStates: Record<string, PlayerGameState>;
 }

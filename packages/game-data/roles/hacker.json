@@ -2,9 +2,9 @@
   "id": "hacker",
   "name": "Hacker",
   "faction": "ALGORITHM",
-  "description": "Removes context to distort meaning.",
+  "description": "Removes context to distort meaning. You can bypass security and access private information.",
   "abilityName": "Account Breach",
-  "abilityDescription": "Once per game, choose another player. Learn their role, one random Information Card from their hand, and their current Analyst prediction if they have one. They are told ACCOUNT BREACHED but not what you learned.",
+  "abilityDescription": "Once per game, choose another player. Learn their role, one random Information Card from their hand, and their current Analyst prediction if they have one. They are told ACCOUNT BREACHED but not what you learned. Use this to identify key threats.",
   "abilityType": "once_per_game",
-  "abilityTiming": "anytime"
+  "abilityTiming": "anytime_before_discussion"
 }

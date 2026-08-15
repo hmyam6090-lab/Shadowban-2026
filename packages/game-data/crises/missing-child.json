@@ -1,0 +1,62 @@
+{
+  "id": "missing-child",
+  "name": "Missing Child",
+  "description": "A child has gone missing. Information is limited and unverified leads are spreading online.",
+  "responses": [
+    {
+      "id": "amber-alert",
+      "label": "Issue Amber Alert",
+      "description": "Wide public alert to help locate the child immediately."
+    },
+    {
+      "id": "search-quietly",
+      "label": "Search the Area Quietly",
+      "description": "Conduct a local search without public alert."
+    },
+    {
+      "id": "appeal-online",
+      "label": "Appeal for Information Online",
+      "description": "Request public help through online channels."
+    }
+  ],
+  "correctResponseId": "amber-alert",
+  "evidenceIds": [
+    "MSC-01",
+    "MSC-02",
+    "MSC-03",
+    "MSC-04",
+    "MSC-05",
+    "MSC-06",
+    "MSC-07",
+    "MSC-08",
+    "MSC-09",
+    "MSC-10",
+    "MSC-11",
+    "MSC-12",
+    "MSC-13",
+    "MSC-14",
+    "MSC-15",
+    "MSC-16",
+    "MSC-17",
+    "MSC-18",
+    "MSC-19",
+    "MSC-20",
+    "MSC-21",
+    "MSC-22",
+    "MSC-23",
+    "MSC-24",
+    "MSC-25",
+    "MSC-26",
+    "MSC-27",
+    "MSC-28",
+    "MSC-29",
+    "MSC-30"
+  ],
+  "noiseIds": [
+    "MSC-09",
+    "MSC-15",
+    "MSC-19",
+    "MSC-25",
+    "MSC-28"
+  ]
+}

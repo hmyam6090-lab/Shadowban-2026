@@ -10,19 +10,30 @@ export interface PublicGameState {
   gameId: string;
   gameCode: string;
   hostPlayerId: string;
-  players: PublicPlayer[];
   currentRound: number;
   totalRounds: number;
   phase: GamePhase;
   currentCrisisId?: string;
+  currentAlgorithmId?: string;
   societyScore: number;
   algorithmScore: number;
   phaseEndsAt?: number;
-  publicEvidence: string[];
+  publicEvidence: Array<{
+    playerId: string;
+    card: InformationCard;
+  }>;
+  players: PublicPlayer[];
   votes?: Record<string, string>;
   shadowbanVotes?: Record<string, string>;
   societyWins: number;
   algorithmWins: number;
+  publicAnnouncements: Array<{
+    id: string;
+    type: 'journalist_claim' | 'ability_used' | 'system';
+    message: string;
+    timestamp: number;
+    playerId?: string;
+  }>;
 }
 
 export interface PrivatePlayerState {
@@ -42,6 +53,7 @@ export interface PrivatePlayerState {
   protectedFromShadowban: boolean;
   mutedNextRound: boolean;
   accountBreached: boolean;
+  phaseReady: boolean;
 }
 
 export interface HostGameState extends PublicGameState {

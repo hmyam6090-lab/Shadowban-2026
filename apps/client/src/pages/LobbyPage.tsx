@@ -1,11 +1,13 @@
-import { useEffect } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useEffect } from "react";
+import { useNavigate, useParams } from "react-router-dom";
 
-import { socket } from '../socket/socket.js';
-import { useAppStore } from '../stores/appStore.js';
-import { ConnectionStatus } from '../components/common/ConnectionStatus.js';
-import { PlayerList } from '../components/game/PlayerList.js';
-import { GameHeader } from '../components/game/GameHeader.js';
+import { socket } from "../socket/socket.js";
+import { useAppStore } from "../stores/appStore.js";
+import { ConnectionStatus } from "../components/common/ConnectionStatus.js";
+import { PlayerList } from "../components/game/PlayerList.js";
+import { GameHeader } from "../components/game/GameHeader.js";
+import { GameSidebar } from "../components/game/GameSidebar.js";
+import { GamePhase } from "@shadowban/shared";
 
 export function LobbyPage() {
   const { gameCode } = useParams();
@@ -22,11 +24,11 @@ export function LobbyPage() {
     }
 
     if (session && session.gameCode === gameCode) {
-      socket.emit('game:join', { gameCode, playerId: session.playerId });
+      socket.emit("game:join", { gameCode, playerId: session.playerId });
       return;
     }
 
-    navigate('/join');
+    navigate("/join");
   }, [gameCode, navigate, session]);
 
   useEffect(() => {
@@ -46,50 +48,52 @@ export function LobbyPage() {
 
   const isHost = session?.playerId === publicState.hostPlayerId;
   const me = publicState.players.find(
-    (player) => player.id === session?.playerId
+    (player) => player.id === session?.playerId,
   );
 
   return (
-    <section className="lobby-layout">
-      <GameHeader
-        gameCode={publicState.gameCode}
-        round={publicState.currentRound}
-        totalRounds={publicState.totalRounds}
-        phase={publicState.phase}
+    <section className="game-layout">
+      <GameSidebar
+        currentPhase={GamePhase.LOBBY}
+        onNavigate={(targetPhase) => {
+          // Navigation is controlled by game state, not manual selection
+          // This is for visual indication only
+        }}
       />
-
-      <div className="lobby-grid">
-        <article className="card room-card">
-          <p className="eyebrow">Lobby</p>
-          <h2>Game Code: {publicState.gameCode}</h2>
-          <p>{session?.playerName ?? 'Player'} is in the room.</p>
-          <ConnectionStatus status={serverStatus} />
-          <div className="stack compact">
-            <button type="button" onClick={() => socket.emit('game:ready')}>
-              {me?.ready ? 'Mark Not Ready' : 'Mark Ready'}
-            </button>
-            {isHost ? (
-              <button type="button" onClick={() => socket.emit('game:start')}>
-                START GAME
+      <div className="game-main-container">
+        <div className="game-grid">
+          <article className="card room-card">
+            <p className="eyebrow">Lobby</p>
+            <h2>Game Code: {publicState.gameCode}</h2>
+            <p>{session?.playerName ?? "Player"} is in the room.</p>
+            <ConnectionStatus status={serverStatus} />
+            <div className="stack compact">
+              <button type="button" onClick={() => socket.emit("game:ready")}>
+                {me?.ready ? "Mark Not Ready" : "Mark Ready"}
               </button>
-            ) : null}
-          </div>
-          {currentCrisis ? (
-            <p className="lobby-crisis">Next crisis: {currentCrisis.name}</p>
-          ) : (
-            <p className="lobby-crisis">
-              Waiting for the host to begin the first round.
-            </p>
-          )}
-        </article>
+              {isHost ? (
+                <button type="button" onClick={() => socket.emit("game:start")}>
+                  START GAME
+                </button>
+              ) : null}
+            </div>
+            {currentCrisis ? (
+              <p className="lobby-crisis">Next crisis: {currentCrisis.name}</p>
+            ) : (
+              <p className="lobby-crisis">
+                Waiting for the host to begin the first round.
+              </p>
+            )}
+          </article>
 
-        <article className="card">
-          <h3>Players</h3>
-          <PlayerList
-            players={publicState.players}
-            hostPlayerId={publicState.hostPlayerId}
-          />
-        </article>
+          <article className="card">
+            <h3>Players</h3>
+            <PlayerList
+              players={publicState.players}
+              hostPlayerId={publicState.hostPlayerId}
+            />
+          </article>
+        </div>
       </div>
     </section>
   );

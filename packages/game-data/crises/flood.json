@@ -1,43 +1,68 @@
 {
   "id": "flood",
-  "name": "Flood",
-  "description": "Heavy rainfall has caused severe flooding throughout the region.",
+  "name": "Flood Warning",
+  "description": "Heavy rainfall has caused water levels to rise rapidly in multiple areas. Some sources warn of an imminent flood.",
   "responses": [
     {
       "id": "evacuate",
-      "label": "Evacuate",
-      "description": "Move residents away from dangerous zones."
+      "label": "Evacuate Now",
+      "description": "Immediate evacuation of affected zones."
     },
     {
       "id": "investigate",
-      "label": "Investigate",
-      "description": "Deploy teams to verify the scale of the damage."
+      "label": "Investigate Further",
+      "description": "Deploy teams to verify the scale of the damage before acting."
     },
     {
-      "id": "no-action",
-      "label": "No Immediate Action",
-      "description": "Wait for more data before making a move."
+      "id": "public-warning",
+      "label": "Issue Public Warning",
+      "description": "Alert the public to the situation without full evacuation."
     }
   ],
   "correctResponseId": "evacuate",
   "evidenceIds": [
-    "flood-hospital-capacity",
-    "flood-river-level",
-    "flood-emergency-ward",
-    "flood-traffic-gridlock",
-    "flood-school-closures",
-    "flood-water-rescue",
-    "flood-humidity-spike",
-    "flood-bridge-closure"
+    "FLD-01",
+    "FLD-02",
+    "FLD-03",
+    "FLD-04",
+    "FLD-05",
+    "FLD-08",
+    "FLD-09",
+    "FLD-13",
+    "FLD-18",
+    "FLD-19",
+    "FLD-21",
+    "FLD-1B-01",
+    "FLD-08",
+    "FLD-11",
+    "FLD-15",
+    "FLD-16",
+    "FLD-22",
+    "FLD-25",
+    "FLD-26",
+    "FLD-14",
+    "FLD-20",
+    "FLD-1C-03",
+    "FLD-1C-04",
+    "FLD-23",
+    "FLD-24",
+    "FLD-10",
+    "FLD-27"
   ],
   "noiseIds": [
-    "flood-social-media",
-    "flood-celebrity-tweet",
-    "flood-viral-meme",
-    "flood-weather-opinion",
-    "flood-supply-rumor",
-    "flood-town-hall-clip",
-    "flood-unverified-photo",
-    "flood-headline-drift"
+    "FLD-1A-05",
+    "FLD-12",
+    "FLD-25",
+    "FLD-05",
+    "FLD-1B-05",
+    "FLD-11",
+    "FLD-17",
+    "FLD-07",
+    "FLD-1C-03",
+    "FLD-24",
+    "FLD-1C-04",
+    "FLD-17",
+    "FLD-07",
+    "FLD-23"
   ]
 }

@@ -2,9 +2,9 @@
   "id": "echo_chamber",
   "name": "Echo Chamber",
   "faction": "ALGORITHM",
-  "description": "Repeats the loudest version of every claim.",
+  "description": "Repeats the loudest version of every claim. You control the conversation by isolating key voices.",
   "abilityName": "Closed Circuit",
-  "abilityDescription": "Once per round, choose one player. That player chooses another player. For 30 seconds, only those two may speak. Everyone else must listen.",
+  "abilityDescription": "Once per round, choose one player. That player chooses another player. For 30 seconds, only those two may speak. Everyone else must listen. Use this to shape the narrative.",
   "abilityType": "once_per_round",
-  "abilityTiming": "anytime"
+  "abilityTiming": "anytime_before_discussion"
 }

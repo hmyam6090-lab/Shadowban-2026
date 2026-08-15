@@ -2,9 +2,9 @@
   "id": "official",
   "name": "Official",
   "faction": "SOCIETY",
-  "description": "Compares clues and tracks inconsistencies.",
+  "description": "Compares clues and tracks inconsistencies. You have access to official sources and can verify information against established protocols.",
   "abilityName": "Eyes On You",
-  "abilityDescription": "Once per round, choose another player. You see one random Information Card from their hand.",
+  "abilityDescription": "Once per round, choose another player. You see one random Information Card from their hand. Use this to identify who has reliable information and who might be working for the Algorithm.",
   "abilityType": "once_per_round",
-  "abilityTiming": "anytime"
+  "abilityTiming": "anytime_before_discussion"
 }

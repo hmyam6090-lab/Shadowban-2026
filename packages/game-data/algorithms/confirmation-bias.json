@@ -1,7 +1,9 @@
 {
   "id": "confirmation-bias",
   "name": "Confirmation Bias",
-  "description": "Reinforces the most convincing narrative even when incomplete.",
+  "description": "Reinforces the most convincing narrative even when incomplete. Boosts content that supports a single dominant response while filtering out contradictory evidence.",
+  "boostTags": ["Emotional", "Opinion"],
+  "filterTags": ["Technical", "AI"],
   "distribution": {
     "response1": 7,
     "response2": 5,

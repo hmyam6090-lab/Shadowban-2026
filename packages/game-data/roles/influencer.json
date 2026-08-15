@@ -2,9 +2,9 @@
   "id": "influencer",
   "name": "Influencer",
   "faction": "ALGORITHM",
-  "description": "Amplifies misleading evidence and confusion.",
+  "description": "Amplifies misleading evidence and confusion. Even when silenced, your influence persists.",
   "abilityName": "Mute",
-  "abilityDescription": "If you are Shadowbanned, you may choose one other player. That player cannot speak during the next round. You are then eliminated normally.",
+  "abilityDescription": "If you are Shadowbanned, you may choose one other player. That player cannot speak during the next round. You are then eliminated normally. Your final act is to silence a key voice.",
   "abilityType": "passive",
   "abilityTiming": "on_shadowban"
 }

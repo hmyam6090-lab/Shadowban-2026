@@ -2,9 +2,9 @@
   "id": "algorithm",
   "name": "Algorithm",
   "faction": "ALGORITHM",
-  "description": "Overwhelms the table with volume and urgency.",
+  "description": "Overwhelms the table with volume and urgency. You control what information players see and don't see.",
   "abilityName": "For You",
-  "abilityDescription": "Once per round, choose one player. That player secretly receives one additional Information Card. They are not told why. Other players are not told who received it.",
+  "abilityDescription": "Once per round, choose one player. That player secretly receives one additional Information Card. They are not told why. Other players are not told who received it. Use this to flood players with noise or strategic information.",
   "abilityType": "once_per_round",
-  "abilityTiming": "anytime"
+  "abilityTiming": "anytime_before_discussion"
 }

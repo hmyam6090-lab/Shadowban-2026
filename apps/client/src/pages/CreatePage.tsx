@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 
 import { createGame } from "../services/api.js";
 import { useAppStore } from "../stores/appStore.js";
-import { AvatarCanvas } from "../components/common/AvatarCanvas.js";
+import { EmojiAvatarSelector } from "../components/common/EmojiAvatarSelector.js";
 
 export function CreatePage() {
   const navigate = useNavigate();
@@ -11,7 +11,6 @@ export function CreatePage() {
   const [hostName, setHostName] = useState("");
   const [totalRounds, setTotalRounds] = useState(6);
   const [avatar, setAvatar] = useState<string | null>(null);
-  const [showAvatarCanvas, setShowAvatarCanvas] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -55,82 +54,51 @@ export function CreatePage() {
     }
   }
 
-  function handleAvatarSave(avatarData: string) {
-    setAvatar(avatarData);
-    localStorage.setItem("shadowban_avatar", avatarData);
-    setShowAvatarCanvas(false);
+  function handleAvatarSelect(emoji: string) {
+    setAvatar(emoji);
+    localStorage.setItem("shadowban_avatar", emoji);
   }
 
   return (
-    <section className="card form-card">
-      <p className="eyebrow">Create</p>
-      <h2>Start a new game</h2>
-      <form onSubmit={handleSubmit} className="stack">
-        <label>
-          Host name
-          <input
-            value={hostName}
-            onChange={(event) => setHostName(event.target.value)}
-            placeholder="Quan"
-          />
-        </label>
-        <label>
-          Avatar
-          <div className="avatar-section">
-            {avatar ? (
-              <img
-                src={avatar}
-                alt="Your avatar"
-                className="avatar-preview"
-                onClick={() => setShowAvatarCanvas(true)}
-              />
-            ) : (
-              <button
-                type="button"
-                onClick={() => setShowAvatarCanvas(true)}
-                className="secondary-btn"
-              >
-                Create Avatar
-              </button>
-            )}
-          </div>
-        </label>
-        <label>
-          Total rounds
-          <input
-            type="number"
-            min="2"
-            max="6"
-            value={totalRounds}
-            onChange={(event) => setTotalRounds(Number(event.target.value))}
-          />
-        </label>
-        {error ? <p className="error-text">{error}</p> : null}
-        <button
-          type="submit"
-          disabled={loading || hostName.trim().length === 0}
-        >
-          {loading ? "Creating..." : "Create Game"}
-        </button>
-      </form>
-      {showAvatarCanvas && (
-        <div className="modal-overlay">
-          <div className="modal-content">
-            <h3>Create Your Avatar</h3>
-            <AvatarCanvas
-              onSave={handleAvatarSave}
-              initialData={avatar || undefined}
+    <div className="page-layout">
+      <section className="card form-card">
+        <p className="eyebrow">Create</p>
+        <h2>Start a new game</h2>
+        <form onSubmit={handleSubmit} className="stack">
+          <label>
+            Host name
+            <input
+              value={hostName}
+              onChange={(event) => setHostName(event.target.value)}
+              placeholder="Quan"
             />
-            <button
-              type="button"
-              onClick={() => setShowAvatarCanvas(false)}
-              className="secondary-btn"
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      )}
-    </section>
+          </label>
+          <label>
+            Avatar
+            <EmojiAvatarSelector
+              selectedAvatar={avatar}
+              onSelect={handleAvatarSelect}
+            />
+          </label>
+          <label>
+            Total rounds
+            <input
+              type="number"
+              min="2"
+              max="6"
+              value={totalRounds}
+              onChange={(event) => setTotalRounds(Number(event.target.value))}
+            />
+          </label>
+          {error ? <p className="error-text">{error}</p> : null}
+          <button
+            type="submit"
+            disabled={loading || hostName.trim().length === 0}
+          >
+            {loading ? "Creating..." : "Create Game"}
+          </button>
+        </form>
+      </section>
+    </div>
   );
 }

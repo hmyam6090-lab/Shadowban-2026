@@ -1,7 +1,9 @@
 {
   "id": "engagement-first",
-  "name": "Engagement First",
-  "description": "Prioritizes whatever creates the most table chatter.",
+  "name": "Engagement Engine",
+  "description": "Prioritizes content most likely to generate reactions and engagement. Boosts viral and emotional content while filtering out technical and official sources.",
+  "boostTags": ["Viral", "Emotional", "Visual"],
+  "filterTags": ["Official", "Technical"],
   "distribution": {
     "response1": 6,
     "response2": 6,

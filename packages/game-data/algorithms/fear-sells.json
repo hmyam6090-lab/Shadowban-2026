@@ -1,7 +1,9 @@
 {
   "id": "fear-sells",
   "name": "Fear Sells",
-  "description": "Prefers alarming evidence and spreads noise.",
+  "description": "Prefers alarming evidence and spreads noise. Boosts emotional and viral content while filtering out calm, technical sources.",
+  "boostTags": ["Emotional", "Viral"],
+  "filterTags": ["Technical", "Official"],
   "distribution": {
     "response1": 8,
     "response2": 5,

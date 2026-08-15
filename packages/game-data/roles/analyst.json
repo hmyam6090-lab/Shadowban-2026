@@ -2,9 +2,9 @@
   "id": "analyst",
   "name": "Analyst",
   "faction": "SOCIETY",
-  "description": "Compares clues and tracks inconsistencies.",
+  "description": "Compares clues and tracks inconsistencies. You can make a definitive call when you're certain of the correct answer.",
   "abilityName": "Final Call",
-  "abilityDescription": "Once per game, publicly commit to one crisis option before voting. Your vote locks to that option. If correct, you are protected from the next Shadowban.",
+  "abilityDescription": "Once per game, publicly commit to one crisis option before voting. Your vote locks to that option. If correct, you are protected from the next Shadowban. Use this when you're absolutely certain.",
   "abilityType": "once_per_game",
-  "abilityTiming": "anytime"
+  "abilityTiming": "anytime_before_discussion"
 }
