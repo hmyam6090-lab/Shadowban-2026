@@ -3103,6 +3103,57 @@ label {
   margin-bottom: 0.5rem;
 }
 
+.vote-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.vote-button {
+  padding: 0.5rem 1rem;
+  background: var(--surface);
+  border: 2px solid var(--border);
+  border-radius: var(--radius-sm);
+  color: white;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 200ms ease;
+  flex: 1 1 auto;
+  min-width: 120px;
+  max-width: 200px;
+}
+
+.vote-button:hover:not(:disabled) {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: var(--accent);
+  transform: translateY(-2px);
+}
+
+.vote-button.selected {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: white;
+}
+
+.vote-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.resolution-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.resolution-header h3 {
+  margin: 0;
+}
+
 .card-header {
   display: flex;
   justify-content: space-between;

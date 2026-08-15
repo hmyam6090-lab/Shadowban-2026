@@ -366,15 +366,18 @@ export function GameFlowPage() {
                 ) : (
                   <p className="soft-copy">Select a response to vote.</p>
                 )}
-                {crisis?.responses.map((response) => (
-                  <ResponseCard
-                    key={response.id}
-                    response={response}
-                    selected={selectedVote === response.id}
-                    onClick={() => !hasVoted && handleVote(response.id)}
-                    disabled={hasVoted}
-                  />
-                ))}
+                <div className="vote-buttons">
+                  {crisis?.responses.map((response) => (
+                    <button
+                      key={response.id}
+                      className={`vote-button ${selectedVote === response.id ? "selected" : ""}`}
+                      onClick={() => !hasVoted && handleVote(response.id)}
+                      disabled={hasVoted}
+                    >
+                      {response.label}
+                    </button>
+                  ))}
+                </div>
               </div>
             ) : null}
 
@@ -510,7 +513,15 @@ export function GameFlowPage() {
 
             {phase === "RESOLUTION" && crisis ? (
               <div className="resolution-panel">
-                <h3>Round resolved</h3>
+                <div className="resolution-header">
+                  <h3>Round resolved</h3>
+                  <div className="timer-box">
+                    <Timer
+                      endsAt={Date.now() + 20000}
+                      onExpire={() => isHost && socket.emit("host:advance")}
+                    />
+                  </div>
+                </div>
                 <div className="correct-answer">
                   <p className="correct-answer-label">Correct Response:</p>
                   <p className="correct-answer-value">

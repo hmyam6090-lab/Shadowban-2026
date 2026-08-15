@@ -66,15 +66,6 @@ export function RoleReveal({ role, onComplete }: RoleRevealProps) {
                 {role?.faction || "Unknown"}
               </span>
 
-              {role?.abilityName && (
-                <div className="role-ability">
-                  <div className="ability-header">
-                    <span className="ability-icon">⚡</span>
-                    <span className="ability-name">{role.abilityName}</span>
-                  </div>
-                </div>
-              )}
-
               <button className="role-reveal-done-btn" onClick={onComplete}>
                 Done
               </button>
