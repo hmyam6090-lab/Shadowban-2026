@@ -8,7 +8,6 @@ import {
   useParams,
 } from "react-router-dom";
 
-import { ConnectionStatus } from "../components/common/ConnectionStatus.js";
 import { useAppStore } from "../stores/appStore.js";
 import { useSocketConnection } from "../socket/socket.js";
 import { CreatePage } from "../pages/CreatePage.js";
@@ -55,16 +54,10 @@ function GameRouteGate() {
 }
 
 export function App() {
-  const serverStatus = useAppStore((state) => state.serverStatus);
-
   useSocketConnection();
 
   return (
     <div className="app-shell">
-      <div className="connection-status-inline">
-        <ConnectionStatus status={serverStatus} />
-      </div>
-
       <RouteSync />
 
       <main className="content-shell">
@@ -74,7 +67,7 @@ export function App() {
             element={
               <GamePage
                 title="SHADOWBAN"
-                subtitle="Initial multiplayer scaffold is online."
+                subtitle="The press is hot, the paper is live."
               />
             }
           />

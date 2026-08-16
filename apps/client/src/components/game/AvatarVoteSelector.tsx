@@ -14,6 +14,7 @@ export function AvatarVoteSelector({
   disabled = false
 }: AvatarVoteSelectorProps) {
   const [selectedPlayer, setSelectedPlayer] = useState<string | null>(null);
+  const getInitial = (name: string) => name.trim().charAt(0).toUpperCase() || "?";
 
   const handleVote = (playerId: string) => {
     if (disabled) return;
@@ -48,13 +49,9 @@ export function AvatarVoteSelector({
               title={player.name}
             >
               <div className="avatar-vote-card-content">
-                {player.avatar ? (
-                  <img src={player.avatar} alt={player.name} className="avatar-vote-img" />
-                ) : (
-                  <div className="avatar-vote-placeholder">
-                    {player.name.charAt(0).toUpperCase()}
-                  </div>
-                )}
+                <div className="avatar-vote-placeholder">
+                  {getInitial(player.name)}
+                </div>
                 <span className="player-name">{player.name}</span>
                 {voteCount > 0 && <span className="vote-count-badge">{voteCount}</span>}
                 {isShadowbanned && <span className="shadowbanned-badge">Shadowbanned</span>}

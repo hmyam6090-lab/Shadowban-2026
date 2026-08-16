@@ -15,6 +15,8 @@ export function AvatarVotingDisplay({
   correctResponseId,
   selectedResponseId,
 }: AvatarVotingDisplayProps) {
+  const getInitial = (name: string) => name.trim().charAt(0).toUpperCase() || "?";
+
   // Group players by their vote
   const votesByResponse = responses.reduce(
     (acc, response) => {
@@ -61,17 +63,9 @@ export function AvatarVotingDisplay({
                     className="avatar-voter"
                     title={player.name}
                   >
-                    {player.avatar ? (
-                      <img
-                        src={player.avatar}
-                        alt={player.name}
-                        className="avatar-voter-img"
-                      />
-                    ) : (
-                      <div className="avatar-voter-placeholder">
-                        {player.name.charAt(0).toUpperCase()}
-                      </div>
-                    )}
+                    <div className="avatar-voter-placeholder">
+                      {getInitial(player.name)}
+                    </div>
                   </div>
                 ))
               ) : (

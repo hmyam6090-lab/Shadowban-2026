@@ -37,6 +37,7 @@ export function ChatPanel({
   const [inputValue, setInputValue] = useState("");
   const [modalImage, setModalImage] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const getInitial = (name: string) => name.trim().charAt(0).toUpperCase() || "?";
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -72,17 +73,9 @@ export function ChatPanel({
           {players.map((player) => (
             <div key={player.id} className="chat-player-item">
               <div className="chat-player-avatar">
-                {player.avatar ? (
-                  <img
-                    src={player.avatar}
-                    alt={player.name}
-                    className="chat-player-avatar-img"
-                  />
-                ) : (
-                  <div className="chat-player-avatar-placeholder">
-                    {player.name.charAt(0).toUpperCase()}
-                  </div>
-                )}
+                <div className="chat-player-avatar-placeholder">
+                  {getInitial(player.name)}
+                </div>
               </div>
               <span className="chat-player-name">{player.name}</span>
               {player.isHost && <span className="chat-host-badge">Host</span>}
@@ -98,17 +91,9 @@ export function ChatPanel({
           messages.map((msg, index) => (
             <div key={`${msg.playerId}-${index}`} className="chat-message">
               <div className="chat-message-avatar">
-                {msg.playerAvatar ? (
-                  <img
-                    src={msg.playerAvatar}
-                    alt={msg.playerName}
-                    className="chat-avatar-img"
-                  />
-                ) : (
-                  <div className="chat-avatar-placeholder">
-                    {msg.playerName.charAt(0).toUpperCase()}
-                  </div>
-                )}
+                <div className="chat-avatar-placeholder">
+                  {getInitial(msg.playerName)}
+                </div>
               </div>
               <div className="chat-message-content">
                 <div className="chat-message-header">

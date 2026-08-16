@@ -10,6 +10,7 @@ interface GameSession {
   playerId: string;
   playerName: string;
   isHost: boolean;
+  isLocal?: boolean;
 }
 
 interface VotingResults {

@@ -1,26 +1,16 @@
-import { useState, useEffect, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 
-import { createGame } from "../services/api.js";
+import { createGame, createLocalGame } from "../services/api.js";
 import { useAppStore } from "../stores/appStore.js";
-import { EmojiAvatarSelector } from "../components/common/EmojiAvatarSelector.js";
 
 export function CreatePage() {
   const navigate = useNavigate();
   const setSession = useAppStore((state) => state.setSession);
   const [hostName, setHostName] = useState("");
   const [totalRounds, setTotalRounds] = useState(6);
-  const [avatar, setAvatar] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-
-  // Load saved avatar from localStorage
-  useEffect(() => {
-    const savedAvatar = localStorage.getItem("shadowban_avatar");
-    if (savedAvatar) {
-      setAvatar(savedAvatar);
-    }
-  }, []);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -28,11 +18,7 @@ export function CreatePage() {
     setError(null);
 
     try {
-      const result = await createGame(
-        hostName.trim(),
-        totalRounds,
-        avatar || undefined,
-      );
+      const result = await createGame(hostName.trim(), totalRounds);
 
       setSession({
         gameId: result.gameId,
@@ -54,9 +40,34 @@ export function CreatePage() {
     }
   }
 
-  function handleAvatarSelect(emoji: string) {
-    setAvatar(emoji);
-    localStorage.setItem("shadowban_avatar", emoji);
+  async function handleStartLocal() {
+    setLoading(true);
+    try {
+      const result = await createLocalGame(hostName.trim());
+
+      setSession({
+        gameId: result.gameId,
+        gameCode: result.gameCode,
+        playerId: result.playerId,
+        playerName: hostName.trim(),
+        isHost: true,
+        isLocal: true
+      } as any);
+
+      // Set initial public/private state if provided
+      if (result.publicState) {
+        const setPublicState = useAppStore.getState().setPublicState;
+        const setPrivateState = useAppStore.getState().setPrivateState;
+        setPublicState(result.publicState);
+        setPrivateState(result.privateState);
+      }
+
+      navigate(`/lobby/${result.gameCode}`);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Unable to start local game');
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
@@ -71,13 +82,6 @@ export function CreatePage() {
               value={hostName}
               onChange={(event) => setHostName(event.target.value)}
               placeholder="Quan"
-            />
-          </label>
-          <label>
-            Avatar
-            <EmojiAvatarSelector
-              selectedAvatar={avatar}
-              onSelect={handleAvatarSelect}
             />
           </label>
           <label>
@@ -96,6 +100,13 @@ export function CreatePage() {
             disabled={loading || hostName.trim().length === 0}
           >
             {loading ? "Creating..." : "Create Game"}
+          </button>
+          <button
+            type="button"
+            disabled={loading || hostName.trim().length === 0}
+            onClick={handleStartLocal}
+          >
+            {loading ? "Starting..." : "Start Local Game"}
           </button>
         </form>
       </section>

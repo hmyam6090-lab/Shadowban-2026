@@ -3,7 +3,6 @@ import { useNavigate, useParams } from "react-router-dom";
 
 import { socket } from "../socket/socket.js";
 import { useAppStore } from "../stores/appStore.js";
-import { ConnectionStatus } from "../components/common/ConnectionStatus.js";
 import { PlayerList } from "../components/game/PlayerList.js";
 import { GameHeader } from "../components/game/GameHeader.js";
 import { GameSidebar } from "../components/game/GameSidebar.js";
@@ -16,7 +15,6 @@ export function LobbyPage() {
   const publicState = useAppStore((state) => state.publicState);
   const currentCrisis = useAppStore((state) => state.currentCrisis);
   const setCurrentCrisis = useAppStore((state) => state.setCurrentCrisis);
-  const serverStatus = useAppStore((state) => state.serverStatus);
 
   useEffect(() => {
     if (!gameCode) {
@@ -66,7 +64,6 @@ export function LobbyPage() {
             <p className="eyebrow">Lobby</p>
             <h2>Game Code: {publicState.gameCode}</h2>
             <p>{session?.playerName ?? "Player"} is in the room.</p>
-            <ConnectionStatus status={serverStatus} />
             <div className="stack compact">
               <button type="button" onClick={() => socket.emit("game:ready")}>
                 {me?.ready ? "Mark Not Ready" : "Mark Ready"}

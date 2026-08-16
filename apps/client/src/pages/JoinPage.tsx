@@ -1,26 +1,16 @@
-import { useState, useEffect, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { joinGame } from "../services/api.js";
 import { useAppStore } from "../stores/appStore.js";
-import { EmojiAvatarSelector } from "../components/common/EmojiAvatarSelector.js";
 
 export function JoinPage() {
   const navigate = useNavigate();
   const setSession = useAppStore((state) => state.setSession);
   const [gameCode, setGameCode] = useState("");
   const [playerName, setPlayerName] = useState("");
-  const [avatar, setAvatar] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-
-  // Load saved avatar from localStorage
-  useEffect(() => {
-    const savedAvatar = localStorage.getItem("shadowban_avatar");
-    if (savedAvatar) {
-      setAvatar(savedAvatar);
-    }
-  }, []);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -29,11 +19,7 @@ export function JoinPage() {
 
     try {
       const code = gameCode.trim().toUpperCase();
-      const result = await joinGame(
-        code,
-        playerName.trim(),
-        avatar || undefined,
-      );
+      const result = await joinGame(code, playerName.trim());
 
       setSession({
         gameId: result.gameId,
@@ -51,11 +37,6 @@ export function JoinPage() {
     } finally {
       setLoading(false);
     }
-  }
-
-  function handleAvatarSelect(emoji: string) {
-    setAvatar(emoji);
-    localStorage.setItem("shadowban_avatar", emoji);
   }
 
   return (
@@ -81,13 +62,6 @@ export function JoinPage() {
               value={playerName}
               onChange={(event) => setPlayerName(event.target.value)}
               placeholder="Sarah"
-            />
-          </label>
-          <label>
-            Avatar
-            <EmojiAvatarSelector
-              selectedAvatar={avatar}
-              onSelect={handleAvatarSelect}
             />
           </label>
           {error ? <p className="error-text">{error}</p> : null}

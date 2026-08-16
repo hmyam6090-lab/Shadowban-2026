@@ -51,6 +51,20 @@ export async function createGame(hostName: string, totalRounds?: number, avatar?
   return readJson<{ gameId: string; gameCode: string; playerId: string }>(response);
 }
 
+// Local mode helpers
+import { localGameManager } from '../local/LocalGameManager.js';
+
+export async function createLocalGame(hostName: string): Promise<{ gameId: string; gameCode: string; playerId: string; publicState: any; privateState: any }> {
+  // Synchronous local creation but keep API async
+  const result = localGameManager.createGame(hostName);
+  return result;
+}
+
+export async function joinLocalGame(gameCode: string, playerName: string): Promise<{ gameId: string; playerId: string }> {
+  const result = localGameManager.joinGame(gameCode, playerName);
+  return result;
+}
+
 export async function joinGame(gameCode: string, playerName: string, avatar?: string): Promise<{ gameId: string; playerId: string }> {
   const response = await fetch(`${serverUrl}/api/games/${gameCode}/join`, {
     method: 'POST',

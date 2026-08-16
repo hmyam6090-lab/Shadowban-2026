@@ -31,18 +31,26 @@ export function GamePage({ title, subtitle }: GamePageProps) {
     <div className="main-menu-layout">
       <div className="main-menu-content">
         <div className="main-menu-header">
-          <h1 className="main-title">SHADOWBAN</h1>
-          <p className="main-subtitle">A Social Deduction Game</p>
+          <h1 className="main-title">
+            <span className="sr-only">SHADOWBAN</span>
+            <img
+              className="main-brand-logo"
+              src="/assets/Logo_Real.png"
+              alt="SHADOWBAN"
+              loading="eager"
+            />
+          </h1>
+          <p className="main-subtitle">{subtitle}</p>
         </div>
 
         <div className="status-indicator">
           <span className={`status-dot ${connected}`}></span>
           <span className="status-text">
             {connected === "checking"
-              ? "Connecting..."
+              ? "Waiting on the wire..."
               : connected === "online"
-                ? "Server Online"
-                : "Server Offline"}
+                ? "Wire live"
+                : "Wire down"}
           </span>
         </div>
 
@@ -54,6 +62,10 @@ export function GamePage({ title, subtitle }: GamePageProps) {
           <Link to="/join" className="menu-btn secondary-menu-btn">
             <span className="menu-btn-icon">🔗</span>
             <span className="menu-btn-text">Join Game</span>
+          </Link>
+          <Link to="/create" className="menu-btn tertiary-menu-btn">
+            <span className="menu-btn-icon">🏠</span>
+            <span className="menu-btn-text">Start Local Game</span>
           </Link>
         </div>
 

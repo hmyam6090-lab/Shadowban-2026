@@ -84,7 +84,7 @@ export function GameSidebar({
   return (
     <aside className="game-sidebar">
       <div className="sidebar-header">
-        <h3>SHADOWBAN</h3>
+        <img className="sidebar-brand-logo" src="/assets/Logo_Real.png" alt="SHADOWBAN" />
         <p className="sidebar-subtitle">Game Manager</p>
       </div>
 

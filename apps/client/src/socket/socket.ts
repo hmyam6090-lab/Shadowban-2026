@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { io, type Socket } from 'socket.io-client';
+import { localGameManager } from '../local/LocalGameManager.js';
 
 import type { ServerToClientEvents, ClientToServerEvents } from '@shadowban/shared';
 
@@ -22,7 +23,7 @@ function getServerUrl(): string {
   return 'http://localhost:3001';
 }
 
-const socket: Socket<ServerToClientEvents, ClientToServerEvents> = io(getServerUrl(), {
+const realSocket: Socket<ServerToClientEvents, ClientToServerEvents> = io(getServerUrl(), {
   autoConnect: false,
   transports: ['websocket', 'polling']
 });
@@ -58,43 +59,114 @@ export function useSocketConnection(): void {
       setRoundAudit({ availableEvidence, playerFeedSummary });
     };
 
-    socket.on('connect', handleConnect);
-    socket.on('disconnect', handleDisconnect);
-    socket.on('game:state', handleGameState);
-    socket.on('player:private-state', handlePrivateState);
-    socket.on('crisis:revealed', handleCrisis);
-    socket.on('voting:updated', handleVotingUpdated);
-    socket.on('voting:revealed', handleVotingRevealed);
-    socket.on('evidence:presented', handleEvidencePresented);
-    socket.on('round:audit', handleRoundAudit);
+    if (session?.isLocal) {
+      // Local mode: subscribe to localGameManager events
+      localGameManager.on('game:state', handleGameState);
+      localGameManager.on('player:private-state', handlePrivateState);
+      localGameManager.on('crisis:revealed', handleCrisis);
+      localGameManager.on('voting:updated', handleVotingUpdated);
+      localGameManager.on('voting:revealed', handleVotingRevealed);
+      localGameManager.on('evidence:presented', handleEvidencePresented);
+      localGameManager.on('round:audit', handleRoundAudit);
 
-    if (session && !socket.connected) {
-      socket.connect();
+      // Immediately join if session exists
+      if (session) {
+        // emit synthetic join by sending current state
+        const state = localGameManager['buildPublicState'] ? undefined : undefined;
+      }
+
+      return () => {
+        localGameManager.off('game:state', handleGameState);
+        localGameManager.off('player:private-state', handlePrivateState);
+        localGameManager.off('crisis:revealed', handleCrisis);
+        localGameManager.off('voting:updated', handleVotingUpdated);
+        localGameManager.off('voting:revealed', handleVotingRevealed);
+        localGameManager.off('evidence:presented', handleEvidencePresented);
+        localGameManager.off('round:audit', handleRoundAudit);
+      };
     }
 
-    if (session && socket.connected) {
-      socket.emit('game:join', {
+    // Networked mode: use real socket
+    realSocket.on('connect', handleConnect);
+    realSocket.on('disconnect', handleDisconnect);
+    realSocket.on('game:state', handleGameState);
+    realSocket.on('player:private-state', handlePrivateState);
+    realSocket.on('crisis:revealed', handleCrisis);
+    realSocket.on('voting:updated', handleVotingUpdated);
+    realSocket.on('voting:revealed', handleVotingRevealed);
+    realSocket.on('evidence:presented', handleEvidencePresented);
+    realSocket.on('round:audit', handleRoundAudit);
+
+    if (session && !session.isLocal && !realSocket.connected) {
+      realSocket.connect();
+    }
+
+    if (session && !session.isLocal && realSocket.connected) {
+      realSocket.emit('game:join', {
         gameCode: session.gameCode,
         playerId: session.playerId
       });
     }
 
-    if (!session && socket.connected) {
-      socket.disconnect();
+    if ((!session || session.isLocal) && realSocket.connected) {
+      realSocket.disconnect();
     }
 
     return () => {
-      socket.off('connect', handleConnect);
-      socket.off('disconnect', handleDisconnect);
-      socket.off('game:state', handleGameState);
-      socket.off('player:private-state', handlePrivateState);
-      socket.off('crisis:revealed', handleCrisis);
-      socket.off('voting:updated', handleVotingUpdated);
-      socket.off('voting:revealed', handleVotingRevealed);
-      socket.off('evidence:presented', handleEvidencePresented);
-      socket.off('round:audit', handleRoundAudit);
+      realSocket.off('connect', handleConnect);
+      realSocket.off('disconnect', handleDisconnect);
+      realSocket.off('game:state', handleGameState);
+      realSocket.off('player:private-state', handlePrivateState);
+      realSocket.off('crisis:revealed', handleCrisis);
+      realSocket.off('voting:updated', handleVotingUpdated);
+      realSocket.off('voting:revealed', handleVotingRevealed);
+      realSocket.off('evidence:presented', handleEvidencePresented);
+      realSocket.off('round:audit', handleRoundAudit);
     };
   }, [session, setServerStatus, setPublicState, setPrivateState, setCurrentCrisis, setHasVoted, setVotingResults, setSelectedResponseId, addPresentedEvidence, setRoundAudit]);
 }
 
-export { socket };
+// Export a proxy `socket` object that routes emits to localGameManager in local mode
+export const socket = {
+  emit(event: string, payload?: any) {
+    const session = useAppStore.getState().session;
+    if (session?.isLocal) {
+      switch (event) {
+        case 'game:start':
+          localGameManager.startGame(payload?.gameId || session.gameId);
+          break;
+        case 'host:advance':
+          localGameManager.advancePhase(payload?.gameId || session.gameId);
+          break;
+        default:
+          // unsupported in local mode for now
+          break;
+      }
+      return;
+    }
+
+    (realSocket as any).emit(event, payload);
+  },
+  on(event: string, fn: (...args: any[]) => void) {
+    const session = useAppStore.getState().session;
+    if (session?.isLocal) {
+      localGameManager.on(event, fn as any);
+      return;
+    }
+    (realSocket as any).on(event, fn);
+  },
+  off(event: string, fn: (...args: any[]) => void) {
+    const session = useAppStore.getState().session;
+    if (session?.isLocal) {
+      localGameManager.off(event, fn as any);
+      return;
+    }
+    (realSocket as any).off(event, fn);
+  },
+  connect() {
+    return realSocket.connect();
+  },
+  disconnect() {
+    return realSocket.disconnect();
+  }
+};

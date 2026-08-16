@@ -19,8 +19,8 @@ export function GameHeader({
 }: GameHeaderProps) {
   return (
     <header className="game-header card">
-      <div>
-        <p className="eyebrow">SHADOWBAN</p>
+      <div className="game-brand-block">
+        <img className="game-brand-logo" src="/assets/Logo_Real.png" alt="SHADOWBAN" />
         <h2>Game Code: {gameCode}</h2>
       </div>
       <div className="header-meta">
