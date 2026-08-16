@@ -800,6 +800,63 @@ label {
   }
 }
 
+/* Hacker result small overlay */
+.hacker-result-overlay {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 1200;
+  pointer-events: none; /* don't block interactions elsewhere */
+}
+.hacker-result-card {
+  pointer-events: auto; /* allow interacting with the card itself */
+  min-width: 220px;
+  max-width: 320px;
+  background: linear-gradient(180deg, rgba(20,24,36,0.98), rgba(12,16,24,0.98));
+  border: 2px solid rgba(255,255,255,0.06);
+  padding: 0.6rem 0.8rem;
+  border-radius: 12px;
+  box-shadow: 0 8px 30px rgba(0,0,0,0.45);
+  backdrop-filter: blur(8px);
+  color: #f6f7fb;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  animation: fadeIn 300ms ease;
+}
+.hacker-result-close {
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  cursor: pointer;
+  margin-left: auto;
+}
+.hacker-result-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+.hacker-result-title {
+  font-family: var(--display-font);
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--accent);
+}
+.hacker-role-text {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #f6f7fb;
+}
+.hacker-role-image {
+  width: 56px;
+  height: 56px;
+  object-fit: contain;
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.04);
+}
+
 .shadowban-content {
   max-width: 500px;
   width: 90%;
@@ -2829,6 +2886,7 @@ label {
     rgba(24, 169, 87, 0.08)
   );
   border-color: rgba(24, 169, 87, 0.5);
+  max-height: 300px;
 }
 
 .info-card.private {
@@ -3171,7 +3229,6 @@ label {
 .role-card-image {
   width: 100%;
   height: 100%;
-  object-fit: cover;
 }
 
 
@@ -4995,7 +5052,7 @@ label {
   gap: 0.85rem;
   padding: 1rem;
   box-shadow: var(--shadow-strong);
-  max-height: 600px;
+  max-height: 800px;
 }
 
 .chat-header {
@@ -5107,7 +5164,7 @@ label {
   display: grid;
   gap: 0.75rem;
   padding: 0.5rem 0;
-  max-height: 450px;
+  max-height: 650px;
 }
 
 .chat-empty {
@@ -5324,10 +5381,10 @@ label {
   }
 
   .chat-panel {
-    max-height: 300px;
+    max-height: 420px;
   }
 
   .chat-messages {
-    max-height: 180px;
+    max-height: 280px;
   }
 }

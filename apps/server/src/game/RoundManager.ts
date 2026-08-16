@@ -12,6 +12,12 @@ import {
 } from '@shadowban/shared';
 
 import { getAlgorithmById, getCrisisForRound, getEvidenceForCrisis, getRoleById } from '../services/contentService.js';
+import fs from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+// ESM-compatible directory of this file
+const serverDir = path.dirname(fileURLToPath(import.meta.url));
 
 export class RoundManager {
   startRound(game: GameState): void {
@@ -33,9 +39,12 @@ export class RoundManager {
       playerState.privateInspectionResults = [];
       playerState.hand = [];
       playerState.phaseReady = false;
-      // Clear mute status at start of round
+      // Apply any mutedNextRound as an active mute for this round
       if (playerState.mutedNextRound) {
+        playerState.muted = true;
         playerState.mutedNextRound = false;
+      } else {
+        playerState.muted = false;
       }
     }
   }
@@ -57,18 +66,75 @@ export class RoundManager {
   }
 
   dealInformation(game: GameState): void {
-    const crisis = game.currentCrisisId
-      ? getCrisisForRound(game.currentRound)
-      : undefined;
+    console.log(`[dealInformation] entry game=${game.gameId} currentPhase=${game.phase} currentCrisisId=${game.currentCrisisId}`);
+    try {
+      const crisis = game.currentCrisisId
+        ? getCrisisForRound(game.currentRound)
+        : undefined;
     const allEvidence = crisis ? getEvidenceForCrisis(crisis.id) : [];
+    // Filter out cards that do not have a corresponding image asset in the client public folder
+    // Asset path: apps/client/public/assets/cards/information/{card.id}.png
+    const evidenceWithAssets: InformationCard[] = [];
+    let withAssetCount = 0;
+    let withoutAssetCount = 0;
+    // Resolve candidate asset directories in case server process cwd differs
+    const candidates = [
+      // When running from repo root
+      path.join(process.cwd(), 'apps', 'client', 'public', 'assets', 'cards', 'information'),
+      // When running from apps/server folder (source)
+      path.join(serverDir, '..', '..', '..', 'client', 'public', 'assets', 'cards', 'information'),
+      // When running from apps/server/dist (compiled)
+      path.join(serverDir, '..', '..', 'client', 'public', 'assets', 'cards', 'information')
+    ];
+
+    for (const card of allEvidence) {
+      let found = false;
+      for (const base of candidates) {
+        try {
+          const assetPath = path.join(base, `${card.id}.png`);
+          if (fs.existsSync(assetPath)) {
+            evidenceWithAssets.push(card);
+            withAssetCount += 1;
+            found = true;
+            break;
+          }
+        } catch (err) {
+          // ignore and try next candidate
+        }
+      }
+      if (!found) {
+        withoutAssetCount += 1;
+      }
+    }
+
+    // Attach counts to game state for UI visibility
+    game.assetCardCounts = { withAsset: withAssetCount, withoutAsset: withoutAssetCount };
+
+    console.log(`[dealInformation] crisis=${crisis?.id || 'none'} withAsset=${withAssetCount} withoutAsset=${withoutAssetCount} players=${game.players.length}`);
+
+    // If no assets found, fall back to using all evidence so dealing can proceed
+    if (withAssetCount === 0 && allEvidence.length > 0) {
+      console.warn(`[dealInformation] No client assets found for evidence; falling back to allEvidence for dealing.`);
+      // use the original evidence set
+      evidenceWithAssets.push(...allEvidence);
+      // update counts to reflect fallback
+      game.assetCardCounts = { withAsset: allEvidence.length, withoutAsset: 0 };
+    }
+
+    // If no cards with assets were found, fall back to using all available evidence
+    if (evidenceWithAssets.length === 0 && allEvidence.length > 0) {
+      console.warn(`[dealInformation] no evidence assets found; falling back to all evidence (${allEvidence.length}) to avoid blocking the round`);
+      evidenceWithAssets.push(...allEvidence);
+    }
 
     game.phase = GamePhase.DEAL_INFORMATION;
     game.phaseEndsAt = undefined;
-    game.publicEvidence = allEvidence.slice(0, 1).map((card) => card.id);
+    // Use only cards that have assets for dealing
+    game.publicEvidence = evidenceWithAssets.slice(0, 1).map((card) => card.id);
 
     const cardsByPlayer = this.distributeHandsByAlgorithm(
       game,
-      allEvidence,
+      evidenceWithAssets,
       crisis
     );
 
@@ -78,6 +144,10 @@ export class RoundManager {
       if (playerState) {
         playerState.hand = cards.map((card) => card.id);
       }
+    }
+    } catch (err) {
+      console.error(`[dealInformation] error for game=${game.gameId}:`, err);
+      throw err;
     }
   }
 

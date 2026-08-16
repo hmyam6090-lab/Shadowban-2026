@@ -124,8 +124,10 @@ export class GameManager {
 
   advancePhase(gameId: string): void {
     const game = this.getGame(gameId);
+    console.log(`[advancePhase] game=${gameId} currentPhase=${game.phase}`);
 
-    switch (game.phase) {
+    try {
+      switch (game.phase) {
       case GamePhase.CRISIS_REVEAL:
         this.roundManager.prepareEvidence(game);
         break;
@@ -149,10 +151,16 @@ export class GameManager {
         break;
       default:
         break;
-    }
+      }
 
-    // Reset phase ready status when phase changes
-    this.roundManager.resetPhaseReady(game);
+      console.log(`[advancePhase] game=${gameId} endedPhase=${game.phase}`);
+
+      // Reset phase ready status when phase changes
+      this.roundManager.resetPhaseReady(game);
+    } catch (err) {
+      console.error(`[advancePhase] error for game=${gameId}:`, err);
+      throw err;
+    }
   }
 
   submitVote(gameId: string, playerId: string, responseId: string): void {
@@ -513,6 +521,9 @@ export class GameManager {
       });
 
       targetState.hand.push(randomCard.id);
+      // Mark delivered card as locked so client can disable presenting it
+      targetState.lockedCardIds = targetState.lockedCardIds || [];
+      targetState.lockedCardIds.push(randomCard.id);
       playerState.abilityUsed = true;
     }
     else {
@@ -610,6 +621,8 @@ export class GameManager {
       societyWins: game.societyWins,
       algorithmWins: game.algorithmWins,
       publicAnnouncements: [...game.publicAnnouncements]
+      ,
+      assetCardCounts: game.assetCardCounts ? { ...game.assetCardCounts } : undefined
     };
   }
 
@@ -665,6 +678,8 @@ export class GameManager {
       protectedFromShadowban: playerState.protectedFromShadowban,
       mutedNextRound: playerState.mutedNextRound,
       accountBreached: playerState.accountBreached,
+      lockedCardIds: [...(playerState.lockedCardIds || [])],
+      muted: playerState.muted,
       phaseReady: playerState.phaseReady
     };
   }
@@ -720,6 +735,7 @@ export class GameManager {
       protectedFromShadowban: false,
       mutedNextRound: false,
       accountBreached: false,
+      lockedCardIds: [],
       phaseReady: false
     };
 
@@ -797,6 +813,15 @@ export class GameManager {
       } else {
         targetState.shadowbanned = true;
 
+        // Add public announcement about shadowban so clients can show overlays
+        game.publicAnnouncements.push({
+          id: crypto.randomUUID(),
+          type: 'shadowban',
+          message: `${game.players.find(p => p.id === shadowbannedPlayerId)?.name || 'A player'} was shadowbanned.`,
+          timestamp: Date.now(),
+          playerId: shadowbannedPlayerId
+        });
+
         // Check if the shadowbanned player is an Influencer
         if (targetRole.id === 'influencer') {
           // Influencer can mute another player - this requires UI interaction
@@ -821,6 +846,14 @@ export class GameManager {
     }
 
     targetState.mutedNextRound = true;
+    // Add a public announcement so clients display an overlay
+    game.publicAnnouncements.push({
+      id: crypto.randomUUID(),
+      type: 'ability_used',
+      message: `${game.players.find(p => p.id === targetPlayerId)?.name || 'Player'} will be muted next round.`,
+      timestamp: Date.now(),
+      playerId: targetPlayerId
+    });
   }
 
   checkEliminationVictory(gameId: string): { societyWins: boolean; algorithmWins: boolean } {

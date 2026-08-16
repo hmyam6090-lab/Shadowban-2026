@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 
 import { GamePhase } from "@shadowban/shared";
 
@@ -18,6 +18,8 @@ import { ChatPanel } from "../components/game/ChatPanel.js";
 import { RoleReveal } from "../components/game/RoleReveal.js";
 import { RoleScreen } from "../components/game/RoleScreen.js";
 import { CountdownOverlay } from "../components/game/CountdownOverlay.js";
+import { AnnouncementOverlay } from "../components/game/AnnouncementOverlay.js";
+import HackerResultModal from "../components/game/HackerResultModal";
 import { socket } from "../socket/socket.js";
 import { useAppStore } from "../stores/appStore.js";
 
@@ -104,6 +106,13 @@ export function GameFlowPage() {
   const [showCountdown, setShowCountdown] = useState(false);
   const [hasSeenCountdown, setHasSeenCountdown] = useState(false);
   const [abilityResult, setAbilityResult] = useState<string | null>(null);
+  const [abilityResultData, setAbilityResultData] = useState<any | null>(null);
+  const [abilityTargetHand, setAbilityTargetHand] = useState<any[] | null>(
+    null,
+  );
+  const [hackerResult, setHackerResult] = useState<any | null>(null);
+  const [rolesCache, setRolesCache] = useState<Record<string, string | null>>({});
+  const rolesCacheRef = useRef<Record<string, string | null>>({});
 
   useEffect(() => {
     if (!session) {
@@ -143,6 +152,36 @@ export function GameFlowPage() {
   }, [privateState?.role, hasSeenRoleReveal, showCountdown, hasSeenCountdown]);
 
   useEffect(() => {
+    // If this client is the Hacker, opportunistically cache any role info
+    // that may appear on publicState players (useful if server exposes roles
+    // in some payloads). This cache is local-only and used as a fallback.
+    const myRole = privateState?.role;
+    const isHacker = (() => {
+      if (!myRole) return false;
+      if (typeof myRole === "string") return myRole.toLowerCase().includes("hacker");
+      return (
+        (myRole.name && myRole.name.toLowerCase().includes("hacker")) ||
+        (myRole.id && String(myRole.id).toLowerCase().includes("hacker"))
+      );
+    })();
+
+    if (isHacker && publicState?.players && publicState.players.length) {
+      const entries: Record<string, string | null> = {};
+      publicState.players.forEach((p: any) => {
+        if (p?.role) {
+          const r = typeof p.role === "string" ? p.role : p.role.name ?? p.role.id ?? null;
+          if (r) entries[p.id] = r;
+        }
+      });
+      if (Object.keys(entries).length > 0) {
+        setRolesCache((r) => {
+          const next = { ...r, ...entries };
+          rolesCacheRef.current = next;
+          return next;
+        });
+      }
+    }
+
     // Clear round data when entering a new round
     if (publicState && publicState.phase === GamePhase.CRISIS_REVEAL) {
       clearRoundData();
@@ -151,7 +190,6 @@ export function GameFlowPage() {
 
   const handleVote = (responseId: string) => {
     setSelectedVote(responseId);
-    socket.emit("vote:submit", { responseId });
   };
 
   const handlePresentEvidence = (cardId: string) => {
@@ -229,6 +267,38 @@ export function GameFlowPage() {
     }) => {
       // Show ability result in the ability phase panel
       setAbilityResult(data.result);
+      setAbilityResultData(data);
+      // Cache any role information returned in ability results
+      if (data?.details?.targetId && data?.details?.role) {
+        setRolesCache((r) => {
+          const next = { ...r, [data.details.targetId]: data.details.role };
+          rolesCacheRef.current = next;
+          return next;
+        });
+      }
+      // If this is a hacker breach result for the current player, show modal
+      if (data?.abilityName && /breach/i.test(data.abilityName) && data?.playerId === session?.playerId && data?.details) {
+        const details = data.details;
+        const target = publicState?.players.find((p) => p.id === details.targetId);
+        // prefer server-sent role, then cached role
+        const roleFromServer = details.role ?? details.roleName ?? details.roleId ?? null;
+        const cached = rolesCacheRef.current[details.targetId];
+        const roleToShow = roleFromServer ?? cached ?? null;
+        // store cached role if we learned it
+        if (roleFromServer) {
+          setRolesCache((r) => {
+            const next = { ...r, [details.targetId]: roleFromServer };
+            rolesCacheRef.current = next;
+            return next;
+          });
+        }
+        setHackerResult({
+          targetId: details.targetId,
+          targetName: target?.name || details.targetName || details.targetId,
+          role: roleToShow,
+          roleImage: details.roleImage ?? null,
+        });
+      }
       console.log("Ability result:", data);
       // Update private state to mark ability as used
       if (data.playerId === session?.playerId) {
@@ -237,6 +307,27 @@ export function GameFlowPage() {
             ? { ...state.privateState, abilityUsed: true }
             : undefined,
         }));
+      }
+    };
+
+    const handlePlayerHand = (data: { targetId: string; hand: any[] }) => {
+      setAbilityTargetHand(data.hand || []);
+    };
+
+    // Listen for private state updates that reveal this client's own role and cache it
+    const handlePrivateState = (state: any) => {
+      if (!state || !session) return;
+      const myRole = state.role;
+      if (myRole) {
+        // attempt to extract a readable role string
+        const roleName = typeof myRole === "string" ? myRole : myRole.name ?? myRole.id ?? null;
+        if (roleName) {
+          setRolesCache((r) => {
+            const next = { ...r, [session.playerId]: roleName };
+            rolesCacheRef.current = next;
+            return next;
+          });
+        }
       }
     };
 
@@ -252,7 +343,7 @@ export function GameFlowPage() {
           playerId: data.playerId,
           playerName: player?.name || "Unknown",
           playerAvatar: player?.avatar,
-          message: "",
+          message: `${player?.name || "A player"} has presented evidence`,
           timestamp: Date.now(),
           cardId: data.card.id,
           cardImage: data.card.image || "",
@@ -263,12 +354,16 @@ export function GameFlowPage() {
     socket.on("chat:message", handleChatMessage);
     socket.on("shadowban:resolved", handleShadowbanResolved);
     socket.on("ability:result", handleAbilityResult);
+    socket.on("player:private-state", handlePrivateState as any);
+    socket.on("player:hand", handlePlayerHand);
     socket.on("evidence:presented", handleEvidencePresented);
 
     return () => {
       socket.off("chat:message", handleChatMessage);
       socket.off("shadowban:resolved", handleShadowbanResolved);
       socket.off("ability:result", handleAbilityResult);
+      socket.off("player:private-state", handlePrivateState as any);
+      socket.off("player:hand", handlePlayerHand);
       socket.off("evidence:presented", handleEvidencePresented);
     };
   }, []);
@@ -292,12 +387,18 @@ export function GameFlowPage() {
       {showCountdown && (
         <CountdownOverlay onComplete={() => setShowCountdown(false)} />
       )}
+      <AnnouncementOverlay />
       {showRoleReveal && privateState?.role && (
         <RoleReveal
           role={privateState.role}
           onComplete={() => setShowRoleReveal(false)}
         />
       )}
+      <HackerResultModal
+        open={!!hackerResult}
+        result={hackerResult}
+        onClose={() => setHackerResult(null)}
+      />
       <GameSidebar
         currentPhase={phase}
         onNavigate={(targetPhase) => {
@@ -319,6 +420,9 @@ export function GameFlowPage() {
         onVote={handleVote}
         hasVoted={hasVoted}
         onAbilityAction={handleAbilityAction}
+        abilityHandCards={abilityTargetHand}
+        abilityResultData={abilityResultData}
+        currentPlayerId={session?.playerId}
       />
       <div className="game-main-container">
         <div className="game-grid">
@@ -389,6 +493,29 @@ export function GameFlowPage() {
                     </button>
                   ))}
                 </div>
+                {!hasVoted && (
+                  <div className="vote-confirm">
+                    <button
+                      className="ability-step-btn"
+                      disabled={!selectedVote}
+                      onClick={() => {
+                        if (selectedVote) {
+                          socket.emit("vote:submit", {
+                            responseId: selectedVote,
+                          });
+                        }
+                      }}
+                    >
+                      LOCK VOTE
+                    </button>
+                    <button
+                      className="ability-step-btn secondary"
+                      onClick={() => setSelectedVote(null)}
+                    >
+                      CLEAR
+                    </button>
+                  </div>
+                )}
               </div>
             ) : null}
 
@@ -399,10 +526,19 @@ export function GameFlowPage() {
             ) : null}
 
             {phase === GamePhase.DEAL_INFORMATION ? (
-              <InformationCardCarousel
-                cards={privateState?.hand || []}
-                disabled={privateState?.shadowbanned}
-              />
+              <div>
+                {privateState?.hand && privateState.hand.length > 0 ? (
+                  <InformationCardCarousel
+                    cards={privateState.hand}
+                    disabled={privateState?.shadowbanned}
+                    lockedCardIds={privateState?.lockedCardIds || []}
+                  />
+                ) : (
+                  <div className="deal-placeholder">
+                    <p className="soft-copy">Dealing cards... please wait.</p>
+                  </div>
+                )}
+              </div>
             ) : null}
 
             {phase === GamePhase.DISCUSSION ? (
@@ -443,6 +579,7 @@ export function GameFlowPage() {
                     }
                     showPresentButton={true}
                     disabled={privateState.shadowbanned}
+                    lockedCardIds={privateState.lockedCardIds || []}
                     presentedCardIds={privateState.presentedCardIds || []}
                     maxPresented={2}
                   />

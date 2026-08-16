@@ -35,6 +35,7 @@ export function ChatPanel({
   players = [],
 }: ChatPanelProps) {
   const [inputValue, setInputValue] = useState("");
+  const [modalImage, setModalImage] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const scrollToBottom = () => {
@@ -117,12 +118,37 @@ export function ChatPanel({
                   </span>
                 </div>
                 {msg.cardImage ? (
-                  <img
-                    src={msg.cardImage}
-                    alt="Information Card"
-                    className="chat-card-image"
-                    onClick={() => msg.cardId && onCardClick?.(msg.cardId)}
-                  />
+                  <>
+                    <img
+                      src={msg.cardImage}
+                      alt="Information Card"
+                      className="chat-card-thumbnail"
+                      onClick={() => setModalImage(msg.cardImage || null)}
+                    />
+                    {modalImage && (
+                      <div
+                        className="chat-image-modal"
+                        onClick={() => setModalImage(null)}
+                      >
+                        <div
+                          className="chat-image-modal-content"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <button
+                            className="chat-image-modal-close"
+                            onClick={() => setModalImage(null)}
+                          >
+                            ✕
+                          </button>
+                          <img
+                            src={modalImage}
+                            alt="Full Card"
+                            className="chat-card-full"
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </>
                 ) : (
                   <p className="chat-message-text">{msg.message}</p>
                 )}

@@ -34,6 +34,10 @@ export interface PublicGameState {
     timestamp: number;
     playerId?: string;
   }>;
+  assetCardCounts?: {
+    withAsset: number;
+    withoutAsset: number;
+  };
 }
 
 export interface PrivatePlayerState {
@@ -53,6 +57,8 @@ export interface PrivatePlayerState {
   protectedFromShadowban: boolean;
   mutedNextRound: boolean;
   accountBreached: boolean;
+  muted?: boolean;
+  lockedCardIds?: string[];
   phaseReady: boolean;
 }
 

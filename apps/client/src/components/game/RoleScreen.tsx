@@ -14,6 +14,9 @@ interface RoleScreenProps {
   crisisResponses?: any[];
   currentPhase?: string;
   shadowbanned?: boolean;
+  abilityHandCards?: any[] | null;
+  abilityResultData?: any | null;
+  currentPlayerId?: string | null;
 }
 
 export function RoleScreen({
@@ -28,6 +31,12 @@ export function RoleScreen({
   crisisResponses,
   currentPhase,
   shadowbanned = false,
+  abilityHandCards = null,
+  abilityResultData = null,
+  currentPlayerId = null,
+  currentVote = null,
+  analystPrediction = null,
+  protectedFromShadowban = false,
 }: RoleScreenProps) {
   const [showAbilityFlow, setShowAbilityFlow] = useState(false);
 
@@ -144,6 +153,12 @@ export function RoleScreen({
           onAction={handleAbilityAction}
           crisisResponses={crisisResponses}
           currentPhase={currentPhase}
+          targetHandCards={abilityHandCards}
+          abilityResultData={abilityResultData}
+          currentPlayerId={currentPlayerId}
+          currentVote={currentVote}
+          analystPrediction={analystPrediction}
+          protectedFromShadowban={protectedFromShadowban}
         />
       )}
     </div>

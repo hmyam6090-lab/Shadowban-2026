@@ -1,0 +1,70 @@
+﻿Government Official
+Ability - Eyes On You
+Once per round, use the companion app to secretly inspect one random Information Card from another player.
+You may use what you learn however you want.
+You do not have to reveal that you used the ability.
+Congratulations, you now know something that everyone else desperately wants to know.
+What you do with it is up to you.
+Journalist
+Ability - On Record
+Choose one player.
+Use the companion app to ask them whether their hand contains evidence supporting a specific response.
+They must answer publicly.
+They may lie.
+The question itself becomes public information.
+Sometimes asking the right question is more useful than having the right card.
+Analyst
+Ability - Final Call (Once per game)
+Before voting, choose one response and lock your vote to it.
+- Correct: You are immune to the next shadowban
+- Wrong: You are shadowbanned for the next round
+Basically, make a call and hope future-you doesn't hate past-you.
+Investigator
+Ability - Crosscheck
+Choose two players.
+The companion app tells you whether they are working for the same side or different sides.
+You do not learn their exact roles.
+You may choose whether or not to reveal what you learned.
+Now you know something.
+Whether anyone believes you is another problem.
+ALGORITHM ROLES
+Echo Chamber
+Ability - Closed Circuit
+Choose one player.
+For the next 30 seconds, only you and that player may speak.
+Everyone else must listen.
+The affected player can still communicate through gestures or by showing cards if another rule allows it.
+After 30 seconds, normal discussion resumes.
+Sometimes the best way to control a conversation is to remove most of the conversation.
+Influencer
+Ability - Mute
+The Influencer's ability activates when they are Shadowbanned.
+Before being eliminated, they choose one remaining player.
+That player is muted for the next round.
+A muted player may not speak during the next discussion.
+They may still:
+* Show Information Cards
+* Use allowed role abilities
+* Vote
+After the round ends, the mute effect expires.
+The Influencer is then removed from the game.
+So even after getting kicked out, you can still make everyone's life slightly worse.
+Hacker
+Ability - Account Breach
+Choose one player.
+The companion app reveals:
+* Their role
+* One random Information Card from their hand
+The Hacker may keep this information private.
+You broke into someone's account.
+Please use your newfound power responsibly.
+Or don't.
+You're the Hacker.
+Algorithm
+Ability - For You
+Choose one player.
+That player receives one additional Information Card.
+They may read it privately.
+They now have more information than the rest of the table.
+The Algorithm can use this ability to help a player, confuse them, or simply give them another piece of information to work with.
+The player receiving the card does not learn why they received it.

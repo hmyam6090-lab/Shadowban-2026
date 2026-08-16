@@ -9,6 +9,7 @@ export interface InformationCardCarouselProps {
   disabled?: boolean;
   presentedCardIds?: string[];
   maxPresented?: number;
+  lockedCardIds?: string[];
 }
 
 export function InformationCardCarousel({
@@ -18,6 +19,7 @@ export function InformationCardCarousel({
   disabled = false,
   presentedCardIds = [],
   maxPresented = 2,
+  lockedCardIds = [],
 }: InformationCardCarouselProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [direction, setDirection] = useState<"left" | "right" | null>(null);
@@ -26,8 +28,12 @@ export function InformationCardCarousel({
   const hasNext = currentIndex < cards.length - 1;
   const hasPrev = currentIndex > 0;
   const isPresented = currentCard && presentedCardIds.includes(currentCard.id);
+  const isLocked = currentCard && lockedCardIds?.includes(currentCard.id);
   const canPresent =
-    !disabled && !isPresented && presentedCardIds.length < maxPresented;
+    !disabled &&
+    !isPresented &&
+    !isLocked &&
+    presentedCardIds.length < maxPresented;
 
   const handleNext = () => {
     if (hasNext) {
@@ -85,8 +91,9 @@ export function InformationCardCarousel({
 
       <div className={`carousel-content ${direction || ""}`}>
         {currentCard && (
-          <div className="carousel-card-wrapper">
+          <div className={`carousel-card-wrapper ${isLocked ? "locked" : ""}`}>
             <InformationCard card={currentCard} accent="private" />
+            {isLocked && <div className="card-locked-overlay">LOCKED</div>}
           </div>
         )}
       </div>

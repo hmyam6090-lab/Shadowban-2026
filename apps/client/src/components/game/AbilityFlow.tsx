@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import type {
   RoleDefinition,
   PublicPlayer,
@@ -12,6 +12,9 @@ export interface AbilityFlowProps {
   onAction: (action: string, data: any) => void;
   crisisResponses?: any[];
   currentPhase?: string;
+  targetHandCards?: any[] | null;
+  abilityResultData?: any | null;
+  currentPlayerId?: string | null;
 }
 
 type FlowStep =
@@ -31,12 +34,19 @@ export function AbilityFlow({
   onAction,
   crisisResponses,
   currentPhase,
+  targetHandCards: initialTargetHandCards = null,
+  abilityResultData = null,
+  currentPlayerId = null,
+  currentVote = null,
+  analystPrediction = null,
+  protectedFromShadowban = false,
 }: AbilityFlowProps) {
   const [step, setStep] = useState<FlowStep>("select");
   const [selectedTargets, setSelectedTargets] = useState<string[]>([]);
   const [result, setResult] = useState<any>(null);
   const [inspectedCard, setInspectedCard] =
     useState<PublicInformationCard | null>(null);
+  const [abilityDetails, setAbilityDetails] = useState<any>(null);
   const [breachProgress, setBreachProgress] = useState(0);
   const [targetHandCards, setTargetHandCards] = useState<any[]>([]);
   const [selectedCardIndex, setSelectedCardIndex] = useState<number | null>(
@@ -51,10 +61,9 @@ export function AbilityFlow({
         setSelectedTargets([...selectedTargets, playerId]);
       }
     } else if (role.id === "official") {
-      // Government Official - go to card spy minigame
+      // Government Official - select a player to inspect (server will reveal a random card)
       setSelectedTargets([playerId]);
-      onAction("get_player_hand", { playerId });
-      setStep("card_spy");
+      setStep("confirm");
     } else if (role.id === "journalist") {
       // Journalist - select player then response
       setSelectedTargets([playerId]);
@@ -63,7 +72,21 @@ export function AbilityFlow({
       // Most abilities need 1 target
       setSelectedTargets([playerId]);
       if (role.id === "hacker") {
-        setStep("confirm");
+        // Immediately perform the breach when the hacker selects a target.
+        // This ensures the server only resolves the target role after the
+        // player has actively chosen whom to breach.
+        onAction("breach", { targetId: playerId });
+        setStep("breach_anim");
+        // start breach animation progress
+        let progress = 0;
+        const interval = setInterval(() => {
+          progress += 10;
+          setBreachProgress(progress);
+          if (progress >= 100) {
+            clearInterval(interval);
+            setStep("result");
+          }
+        }, 100);
       }
     }
   };
@@ -81,32 +104,73 @@ export function AbilityFlow({
     setStep("card_reveal");
   };
 
+  // Sync incoming hand cards from parent/socket
+  useEffect(() => {
+    if (initialTargetHandCards && initialTargetHandCards.length > 0) {
+      setTargetHandCards(initialTargetHandCards);
+    }
+  }, [initialTargetHandCards]);
+
+  // Listen for incoming ability result data that matches our selected target
+  useEffect(() => {
+    if (!abilityResultData) return;
+    const details = abilityResultData.details || {};
+    // Match by targetId when present
+    if (
+      details.targetId &&
+      selectedTargets[0] &&
+      details.targetId === selectedTargets[0]
+    ) {
+      setAbilityDetails(details);
+      // if we're on reveal step, ensure result shows
+      if (step === "breach_anim" || step === "card_reveal") {
+        // leave the step handling; result will render when available
+      }
+    }
+    // Some abilities may return role info without targetId; if this result is for the current player (actor), accept it
+    else if (
+      abilityResultData.playerId &&
+      abilityResultData.playerId === currentPlayerId &&
+      details.role
+    ) {
+      setAbilityDetails(details);
+    }
+  }, [abilityResultData, selectedTargets, step]);
+
   const handleSelectAlgorithm = (algorithmId: string) => {
     onAction("select_algorithm", { algorithmId });
     setStep("result");
   };
 
   const handleConfirm = () => {
-    onAction(role.id, { targets: selectedTargets });
-
-    if (role.id === "official") {
-      setStep("card_reveal");
-    } else if (role.id === "hacker") {
-      setStep("breach_anim");
-      // Simulate breach animation
-      let progress = 0;
-      const interval = setInterval(() => {
-        progress += 10;
-        setBreachProgress(progress);
-        if (progress >= 100) {
-          clearInterval(interval);
-          setStep("result");
-        }
-      }, 100);
-    } else if (role.id === "investigator") {
-      setStep("crosscheck_result");
-    } else {
-      setStep("result");
+    // Map confirmation to server actions per role
+    switch (role.id) {
+      case "official":
+        // Official: request the target player's hand so the user can pick a card to inspect
+        onAction("get_player_hand", { targetId: selectedTargets[0] });
+        setStep("card_spy");
+        break;
+      case "hacker":
+        onAction("breach", { targetId: selectedTargets[0] });
+        setStep("breach_anim");
+        // Simulate breach animation
+        let progress = 0;
+        const interval = setInterval(() => {
+          progress += 10;
+          setBreachProgress(progress);
+          if (progress >= 100) {
+            clearInterval(interval);
+            setStep("result");
+          }
+        }, 100);
+        break;
+      case "investigator":
+        onAction("crosscheck", { targetIds: selectedTargets });
+        setStep("crosscheck_result");
+        break;
+      default:
+        setStep("result");
+        break;
     }
   };
 
@@ -212,22 +276,17 @@ export function AbilityFlow({
             <h2 className="ability-step-title">CROSSCHECK</h2>
             <p className="ability-step-description">Select two players.</p>
             <div className="player-selector">
-              <div className="player-select-group">
-                <p className="player-select-label">FIRST PLAYER</p>
-                <button className="player-select-dropdown">
-                  {selectedTargets[0]
-                    ? players.find((p) => p.id === selectedTargets[0])?.name
-                    : "SELECT ▼"}
+              {players.map((player) => (
+                <button
+                  key={player.id}
+                  className={`player-select-btn ${selectedTargets.includes(player.id) ? "selected" : ""}`}
+                  onClick={() => handleSelectTarget(player.id)}
+                >
+                  {selectedTargets.includes(player.id)
+                    ? `✓ ${player.name}`
+                    : `○ ${player.name}`}
                 </button>
-              </div>
-              <div className="player-select-group">
-                <p className="player-select-label">SECOND PLAYER</p>
-                <button className="player-select-dropdown">
-                  {selectedTargets[1]
-                    ? players.find((p) => p.id === selectedTargets[1])?.name
-                    : "SELECT ▼"}
-                </button>
-              </div>
+              ))}
             </div>
             {selectedTargets.length === 2 && (
               <button className="ability-step-btn" onClick={handleConfirm}>
@@ -400,15 +459,22 @@ export function AbilityFlow({
               Choose the response you believe is correct.
             </p>
             <div className="response-selector">
-              {crisisResponses?.map((response) => (
-                <button
-                  key={response.id}
-                  className={`response-select-btn ${selectedTargets.includes(response.id) ? "selected" : ""}`}
-                  onClick={() => setSelectedTargets([response.id])}
-                >
-                  {response.label}
-                </button>
-              ))}
+              {crisisResponses?.map((response) => {
+                const isSelected =
+                  selectedTargets.includes(response.id) ||
+                  currentVote === response.id ||
+                  analystPrediction === response.id;
+                return (
+                  <button
+                    key={response.id}
+                    className={`response-select-btn ${isSelected ? "selected" : ""}`}
+                    onClick={() => setSelectedTargets([response.id])}
+                  >
+                    {response.label}
+                    {isSelected ? " · CHOSEN" : ""}
+                  </button>
+                );
+              })}
             </div>
             {selectedTargets.length > 0 && (
               <>
@@ -439,8 +505,8 @@ export function AbilityFlow({
 
   const renderConfirmStep = () => {
     const selectedPlayer = players.find((p) => p.id === selectedTargets[0]);
-    const selectedResponse = crisisResponses?.find(
-      (r) => r.id === selectedTargets[0],
+    const selectedResponseObj = crisisResponses?.find(
+      (r) => r.id === selectedResponse,
     );
 
     switch (role.id) {
@@ -511,7 +577,7 @@ export function AbilityFlow({
           <div className="ability-step">
             <h2 className="ability-step-title">FINAL CALL</h2>
             <p className="ability-step-description">
-              Lock your vote to {selectedResponse?.label}?
+              Lock your vote to {selectedResponseObj?.label}?
             </p>
             <div className="ability-step-actions">
               <button
@@ -575,7 +641,10 @@ export function AbilityFlow({
 
   const renderCardRevealStep = () => {
     const selectedPlayer = players.find((p) => p.id === selectedTargets[0]);
-    const revealedCard = targetHandCards[selectedCardIndex || 0];
+    // Prefer server-provided inspected card details if available
+    const revealedCard =
+      abilityResultData?.details?.card ||
+      targetHandCards[selectedCardIndex || 0];
 
     return (
       <div className="ability-step">
@@ -630,7 +699,7 @@ export function AbilityFlow({
   const renderCrosscheckResultStep = () => {
     const player1 = players.find((p) => p.id === selectedTargets[0]);
     const player2 = players.find((p) => p.id === selectedTargets[1]);
-    const isSameSide = Math.random() > 0.5; // This would be determined by server
+    const isSameSide = abilityResultData?.details?.isSameSide ?? null;
 
     return (
       <div className="ability-step">
@@ -643,7 +712,11 @@ export function AbilityFlow({
         <p
           className={`crosscheck-result-text ${isSameSide ? "same-side" : "different-side"}`}
         >
-          {isSameSide ? "SAME SIDE" : "DIFFERENT SIDES"}
+          {isSameSide === null
+            ? "RESULT PENDING"
+            : isSameSide
+              ? "SAME SIDE"
+              : "DIFFERENT SIDES"}
         </p>
         <p className="ability-step-subtitle">
           You do not know their exact roles.
@@ -666,10 +739,18 @@ export function AbilityFlow({
             <p className="ability-step-description">{selectedPlayer?.name}</p>
             <div className="breach-result">
               <p className="breach-result-label">ROLE</p>
-              <p className="breach-result-value">JOURNALIST</p>
+              <p className="breach-result-value">
+                {abilityDetails?.role ||
+                  abilityResultData?.details?.role ||
+                  "Unknown"}
+              </p>
               <p className="breach-result-label">RANDOM INFORMATION</p>
               <div className="breach-info-card">
-                <p>"The northern region has sufficient food reserves."</p>
+                <p>
+                  {abilityDetails?.randomInfo ||
+                    abilityResultData?.details?.randomInfo ||
+                    "No additional info."}
+                </p>
               </div>
             </div>
             <button className="ability-step-btn" onClick={handleComplete}>

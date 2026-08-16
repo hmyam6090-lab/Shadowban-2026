@@ -25,6 +25,9 @@ export interface GameSidebarProps {
   onVote?: (responseId: string) => void;
   hasVoted?: boolean;
   onAbilityAction?: (action: string, data: any) => void;
+  abilityHandCards?: any[] | null;
+  abilityResultData?: any | null;
+  currentPlayerId?: string | null;
 }
 
 export function GameSidebar({
@@ -43,6 +46,9 @@ export function GameSidebar({
   onVote,
   hasVoted,
   onAbilityAction,
+  abilityHandCards = null,
+  abilityResultData = null,
+  currentPlayerId = null,
 }: GameSidebarProps) {
   const sections = [
     { id: "lobby", label: "Lobby", phase: GamePhase.LOBBY },
@@ -101,6 +107,12 @@ export function GameSidebar({
             crisisResponses={currentCrisis?.responses}
             currentPhase={currentPhase}
             shadowbanned={shadowbanned}
+            abilityHandCards={abilityHandCards}
+            abilityResultData={abilityResultData}
+            currentPlayerId={currentPlayerId}
+            currentVote={privateState?.vote}
+            analystPrediction={privateState?.analystPrediction}
+            protectedFromShadowban={privateState?.protectedFromShadowban}
           />
         )}
       </div>

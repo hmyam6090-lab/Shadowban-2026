@@ -108,6 +108,7 @@ export interface PlayerGameState {
   analystPrediction?: string;
   protectedFromShadowban: boolean;
   mutedNextRound: boolean;
+  muted?: boolean;
   accountBreached: boolean;
   phaseReady: boolean;
 }
@@ -147,4 +148,8 @@ export interface GameState {
     playerId?: string;
   }>;
   playerStates: Record<string, PlayerGameState>;
+  assetCardCounts?: {
+    withAsset: number;
+    withoutAsset: number;
+  };
 }
