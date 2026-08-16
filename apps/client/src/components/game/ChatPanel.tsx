@@ -10,12 +10,20 @@ export interface ChatMessage {
   cardImage?: string;
 }
 
+export interface Player {
+  id: string;
+  name: string;
+  avatar?: string;
+  isHost?: boolean;
+}
+
 export interface ChatPanelProps {
   messages: ChatMessage[];
   onSendMessage: (message: string) => void;
   disabled?: boolean;
   currentPhase?: string;
   onCardClick?: (cardId: string) => void;
+  players?: Player[];
 }
 
 export function ChatPanel({
@@ -24,6 +32,7 @@ export function ChatPanel({
   disabled = false,
   currentPhase,
   onCardClick,
+  players = [],
 }: ChatPanelProps) {
   const [inputValue, setInputValue] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -54,6 +63,31 @@ export function ChatPanel({
       <div className="chat-header">
         <h4>Chat</h4>
         {currentPhase && <span className="chat-phase">{currentPhase}</span>}
+      </div>
+
+      <div className="chat-players">
+        <h5 className="chat-players-title">Players</h5>
+        <div className="chat-players-list">
+          {players.map((player) => (
+            <div key={player.id} className="chat-player-item">
+              <div className="chat-player-avatar">
+                {player.avatar ? (
+                  <img
+                    src={player.avatar}
+                    alt={player.name}
+                    className="chat-player-avatar-img"
+                  />
+                ) : (
+                  <div className="chat-player-avatar-placeholder">
+                    {player.name.charAt(0).toUpperCase()}
+                  </div>
+                )}
+              </div>
+              <span className="chat-player-name">{player.name}</span>
+              {player.isHost && <span className="chat-host-badge">Host</span>}
+            </div>
+          ))}
+        </div>
       </div>
 
       <div className="chat-messages">

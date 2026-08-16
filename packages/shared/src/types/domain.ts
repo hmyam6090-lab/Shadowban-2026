@@ -18,7 +18,6 @@ export enum GamePhase {
   CRISIS_REVEAL = 'CRISIS_REVEAL',
   EVIDENCE_PREPARATION = 'EVIDENCE_PREPARATION',
   DEAL_INFORMATION = 'DEAL_INFORMATION',
-  ABILITY = 'ABILITY',
   DISCUSSION = 'DISCUSSION',
   VOTING = 'VOTING',
   RESOLUTION = 'RESOLUTION',
@@ -59,6 +58,7 @@ export interface InformationCard {
   reliability?: number;
   tags?: string[];
   supportsResponseId?: string;
+  image?: string;
 }
 
 export interface AlgorithmSetup {
@@ -97,12 +97,12 @@ export interface RoleDefinition {
 }
 
 export interface PlayerGameState {
-  playerId: string;
   roleId: string;
   hand: string[];
   presentedCardIds: string[];
   abilityUsed: boolean;
   vote?: string;
+  lockedVote?: string;
   privateInspectionResults: string[];
   shadowbanned: boolean;
   analystPrediction?: string;
@@ -122,6 +122,7 @@ export interface GameState {
   phase: GamePhase;
   currentCrisisId?: string;
   currentAlgorithmId?: string;
+  selectedAlgorithm?: string;
   societyScore: number;
   algorithmScore: number;
   societyWins: number;
@@ -134,9 +135,13 @@ export interface GameState {
     shadowbannedPlayerId: string | null;
     shadowbannedPlayerName: string | null;
   };
+  echoChamberActive?: boolean;
+  echoChamberAllowedPlayers?: string[];
+  echoChamberEndsAt?: number;
+  influencerMutedPlayerId?: string;
   publicAnnouncements: Array<{
     id: string;
-    type: 'journalist_claim' | 'ability_used' | 'system';
+    type: 'journalist_claim' | 'ability_used' | 'system' | 'journalist' | 'echo_chamber';
     message: string;
     timestamp: number;
     playerId?: string;

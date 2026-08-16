@@ -16,6 +16,7 @@ import { AvatarVotingDisplay } from "../components/game/AvatarVotingDisplay.js";
 import { AvatarVoteSelector } from "../components/game/AvatarVoteSelector.js";
 import { ChatPanel } from "../components/game/ChatPanel.js";
 import { RoleReveal } from "../components/game/RoleReveal.js";
+import { RoleScreen } from "../components/game/RoleScreen.js";
 import { CountdownOverlay } from "../components/game/CountdownOverlay.js";
 import { socket } from "../socket/socket.js";
 import { useAppStore } from "../stores/appStore.js";
@@ -36,10 +37,6 @@ const phaseCopy: Record<GamePhase, { title: string; subtitle: string }> = {
   DEAL_INFORMATION: {
     title: "Deal Information",
     subtitle: "Review your information cards.",
-  },
-  ABILITY: {
-    title: "Ability Phase",
-    subtitle: "Use your role ability if you wish.",
   },
   DISCUSSION: {
     title: "Discussion",
@@ -195,6 +192,11 @@ export function GameFlowPage() {
     console.log("Card clicked:", cardId);
   };
 
+  const handleAbilityAction = (action: string, data: any) => {
+    console.log("Ability action:", action, data);
+    socket.emit("role:action", { action, ...data });
+  };
+
   useEffect(() => {
     const handleChatMessage = (data: {
       playerId: string;
@@ -228,6 +230,14 @@ export function GameFlowPage() {
       // Show ability result in the ability phase panel
       setAbilityResult(data.result);
       console.log("Ability result:", data);
+      // Update private state to mark ability as used
+      if (data.playerId === session?.playerId) {
+        useAppStore.setState((state) => ({
+          privateState: state.privateState
+            ? { ...state.privateState, abilityUsed: true }
+            : undefined,
+        }));
+      }
     };
 
     const handleEvidencePresented = (data: {
@@ -272,10 +282,10 @@ export function GameFlowPage() {
     );
   }
 
-  const phase = publicState.phase;
-  const copy = phaseCopy[phase];
+  const phase = publicState?.phase;
+  const copy = phase ? phaseCopy[phase] : phaseCopy[GamePhase.LOBBY];
   const crisis = currentCrisis;
-  const isHost = session?.playerId === publicState.hostPlayerId;
+  const isHost = session?.playerId === publicState?.hostPlayerId;
 
   return (
     <section className="game-layout">
@@ -308,6 +318,7 @@ export function GameFlowPage() {
         selectedVote={selectedVote}
         onVote={handleVote}
         hasVoted={hasVoted}
+        onAbilityAction={handleAbilityAction}
       />
       <div className="game-main-container">
         <div className="game-grid">
@@ -350,15 +361,15 @@ export function GameFlowPage() {
               </div>
             </div>
 
-            {phase === "CRISIS_REVEAL" && crisis ? (
+            {phase === GamePhase.CRISIS_REVEAL && crisis ? (
               <CrisisCard crisis={crisis} />
             ) : null}
 
-            {phase === "VOTING" && crisis ? (
+            {phase === GamePhase.VOTING && crisis ? (
               <CrisisCard crisis={crisis} showResponses={false} />
             ) : null}
 
-            {phase === "VOTING" ? (
+            {phase === GamePhase.VOTING ? (
               <div className="vote-panel">
                 <h3>Vote privately for the best response.</h3>
                 {hasVoted ? (
@@ -381,57 +392,20 @@ export function GameFlowPage() {
               </div>
             ) : null}
 
-            {phase === "EVIDENCE_PREPARATION" ? (
+            {phase === GamePhase.EVIDENCE_PREPARATION ? (
               <p className="soft-copy">
                 The Algorithm is preparing hidden evidence for the round.
               </p>
             ) : null}
 
-            {phase === "DEAL_INFORMATION" ? (
+            {phase === GamePhase.DEAL_INFORMATION ? (
               <InformationCardCarousel
                 cards={privateState?.hand || []}
                 disabled={privateState?.shadowbanned}
               />
             ) : null}
 
-            {phase === "ABILITY" ? (
-              <div className="ability-phase-panel">
-                <p className="soft-copy">
-                  You may use your role ability during this phase.
-                </p>
-                {privateState?.role && (
-                  <div className="ability-card">
-                    <h4>{privateState.role.name}</h4>
-                    <p className="ability-name">
-                      {privateState.role.abilityName}
-                    </p>
-                    <p className="ability-description">
-                      {privateState.role.abilityDescription}
-                    </p>
-                    {abilityResult && (
-                      <div className="ability-result-feedback">
-                        <p className="result-text">{abilityResult}</p>
-                      </div>
-                    )}
-                    <button
-                      className="ability-btn"
-                      onClick={() => handleActivateRole()}
-                      disabled={
-                        privateState.abilityUsed || privateState.shadowbanned
-                      }
-                    >
-                      {privateState.abilityUsed
-                        ? "Ability Used"
-                        : privateState.shadowbanned
-                          ? "Shadowbanned"
-                          : "Use Ability"}
-                    </button>
-                  </div>
-                )}
-              </div>
-            ) : null}
-
-            {phase === "DISCUSSION" ? (
+            {phase === GamePhase.DISCUSSION ? (
               <div className="discussion-panel">
                 <p className="soft-copy">
                   Public evidence is visible to everyone. Encourage players to
@@ -439,7 +413,7 @@ export function GameFlowPage() {
                 </p>
                 {currentCrisis ? <CrisisCard crisis={currentCrisis} /> : null}
 
-                {publicState.publicAnnouncements &&
+                {publicState?.publicAnnouncements &&
                   publicState.publicAnnouncements.length > 0 && (
                     <div className="public-announcements">
                       <h4>📢 Announcements</h4>
@@ -495,13 +469,13 @@ export function GameFlowPage() {
               </div>
             ) : null}
 
-            {phase === "SHADOWBAN" ? (
+            {phase === GamePhase.SHADOWBAN ? (
               <div className="shadowban-panel">
                 <AvatarVoteSelector
-                  players={publicState.players.filter(
+                  players={publicState?.players.filter(
                     (p) => p.id !== session?.playerId,
                   )}
-                  votes={publicState.shadowbanVotes}
+                  votes={publicState?.shadowbanVotes}
                   onVote={(targetPlayerId) => {
                     setShadowbanVote(targetPlayerId);
                     socket.emit("shadowban:vote", { targetPlayerId });
@@ -511,7 +485,7 @@ export function GameFlowPage() {
               </div>
             ) : null}
 
-            {phase === "RESOLUTION" && crisis ? (
+            {phase === GamePhase.RESOLUTION && crisis ? (
               <div className="resolution-panel">
                 <div className="resolution-header">
                   <h3>Round resolved</h3>
@@ -556,9 +530,10 @@ export function GameFlowPage() {
             <ChatPanel
               messages={chatMessages}
               onSendMessage={handleSendChatMessage}
-              disabled={privateState?.shadowbanned}
+              disabled={phase === GamePhase.LOBBY}
               currentPhase={copy.title}
               onCardClick={handleCardClick}
+              players={publicState?.players}
             />
           </aside>
         </div>

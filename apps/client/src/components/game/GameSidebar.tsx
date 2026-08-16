@@ -7,6 +7,7 @@ import type {
 } from "@shadowban/shared";
 import { ScoreBoard } from "./ScoreBoard.js";
 import { ResponseCard } from "./ResponseCard.js";
+import { RoleScreen } from "./RoleScreen.js";
 
 export interface GameSidebarProps {
   currentPhase: GamePhase;
@@ -23,6 +24,7 @@ export interface GameSidebarProps {
   selectedVote?: string | null;
   onVote?: (responseId: string) => void;
   hasVoted?: boolean;
+  onAbilityAction?: (action: string, data: any) => void;
 }
 
 export function GameSidebar({
@@ -40,6 +42,7 @@ export function GameSidebar({
   selectedVote,
   onVote,
   hasVoted,
+  onAbilityAction,
 }: GameSidebarProps) {
   const sections = [
     { id: "lobby", label: "Lobby", phase: GamePhase.LOBBY },
@@ -84,114 +87,22 @@ export function GameSidebar({
         algorithmScore={publicState?.algorithmScore || 0}
       />
 
-      <div className="sidebar-players">
-        <h4>Players</h4>
-        {publicState?.players.map((player) => (
-          <div key={player.id} className="sidebar-player-item">
-            <span className="player-name-small">{player.name}</span>
-            {player.isHost && <span className="host-badge-small">Host</span>}
-          </div>
-        ))}
-      </div>
-
-      {currentPhase === GamePhase.CRISIS_REVEAL && currentCrisis && (
-        <div className="sidebar-responses">
-          <h4>Responses</h4>
-          {currentCrisis.responses.map((response) => (
-            <ResponseCard
-              key={response.id}
-              response={response}
-              disabled={true}
-            />
-          ))}
-        </div>
-      )}
-
-      <div className="sidebar-tabs">
-        <button
-          className={`sidebar-tab ${activeTab === "phases" ? "active" : ""}`}
-          onClick={() => onTabChange?.("phases")}
-        >
-          Phases
-        </button>
-        <button
-          className={`sidebar-tab ${activeTab === "role" ? "active" : ""}`}
-          onClick={() => onTabChange?.("role")}
-        >
-          Role
-        </button>
-      </div>
-
-      {activeTab === "phases" ? (
-        <nav className="sidebar-nav">
-          {sections.map((section) => (
-            <button
-              key={section.id}
-              className={`sidebar-nav-item ${
-                currentPhase === section.phase ? "active" : ""
-              }`}
-              onClick={() => onNavigate(section.phase)}
-              disabled={currentPhase === section.phase}
-            >
-              {section.label}
-            </button>
-          ))}
-        </nav>
-      ) : (
-        <div className="sidebar-role-content">
-          <div className="role-card-display">
-            <div className="role-card-image-wrapper">
-              <img
-                src={roleImage}
-                alt={role?.name || "Role Card"}
-                className="role-card-image"
-                onError={(e) => {
-                  e.currentTarget.src =
-                    "/assets/cards/role/Role_Government_Official.png";
-                }}
-              />
-            </div>
-          </div>
-
-          <div className="role-details">
-            <h5 className="role-name">{role?.name || "Unknown Role"}</h5>
-            <span
-              className="role-faction-badge"
-              style={{ color: factionColor }}
-            >
-              {role?.faction || "Unknown"}
-            </span>
-            <p className="role-description">{role?.description || ""}</p>
-          </div>
-
-          {role?.abilityName && (
-            <div className="role-ability">
-              <div className="ability-header">
-                <span className="ability-icon">⚡</span>
-                <span className="ability-name">{role.abilityName}</span>
-              </div>
-              <p className="ability-description">{role.abilityDescription}</p>
-              <button
-                className={`ability-btn ${!canUseAbility ? "disabled" : ""}`}
-                onClick={onUseAbility}
-                disabled={!canUseAbility}
-              >
-                {abilityUsed
-                  ? "Ability Used"
-                  : shadowbanned
-                    ? "Shadowbanned"
-                    : "Use Ability"}
-              </button>
-            </div>
-          )}
-        </div>
-      )}
-
-      <div className="sidebar-footer">
-        <div className="sidebar-status">
-          <span className="status-dot"></span>
-          <span className="status-text">Connected</span>
-        </div>
+      <div className="sidebar-role-content">
+        {role && (
+          <RoleScreen
+            role={role}
+            roundNumber={1}
+            abilityUsed={abilityUsed}
+            onUseAbility={onUseAbility || (() => {})}
+            onViewCards={() => {}}
+            handCount={privateState?.hand?.length || 0}
+            players={publicState?.players || []}
+            onAbilityAction={onAbilityAction || (() => {})}
+            crisisResponses={currentCrisis?.responses}
+            currentPhase={currentPhase}
+            shadowbanned={shadowbanned}
+          />
+        )}
       </div>
     </aside>
   );

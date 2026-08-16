@@ -18,6 +18,15 @@ export interface RoleActivatePayload {
   responseId?: string;
 }
 
+export interface RoleActionPayload {
+  action: string;
+  targetId?: string;
+  targetIds?: string[];
+  cardIndex?: number;
+  responseId?: string;
+  algorithmId?: string;
+}
+
 export interface VoteSubmitPayload {
   responseId: string;
 }
@@ -99,6 +108,8 @@ export interface ChatMessagePayload {
   playerAvatar?: string;
   message: string;
   timestamp: number;
+  cardId?: string;
+  cardImage?: string;
 }
 
 export interface GameEndedPayload {
@@ -117,6 +128,7 @@ export interface ClientToServerEvents {
   'game:leave': () => void;
   'phase:ready': () => void;
   'role:activate': (payload: RoleActivatePayload) => void;
+  'role:action': (payload: RoleActionPayload) => void;
   'evidence:present': (payload: { cardId: string }) => void;
   'vote:submit': (payload: VoteSubmitPayload) => void;
   'shadowban:vote': (payload: ShadowbanVotePayload) => void;

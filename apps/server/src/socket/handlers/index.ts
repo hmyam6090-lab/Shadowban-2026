@@ -263,8 +263,21 @@ export function registerSocketHandlers(io: Server<ClientToServerEvents, ServerTo
               crisisId: card.crisisId,
               title: card.title,
               text: card.text,
-              type: card.type
+              type: card.type,
+              image: card.image
             }
+          });
+
+          // Also send as a chat message with card embed
+          const player = game.players.find(p => p.id === playerId);
+          io.to(gameId).emit('chat:message', {
+            playerId,
+            playerName: player?.name || 'Unknown',
+            playerAvatar: player?.avatar,
+            message: `presented evidence: ${card.title}`,
+            timestamp: Date.now(),
+            cardId: card.id,
+            cardImage: card.image
           });
         }
 
@@ -302,16 +315,188 @@ export function registerSocketHandlers(io: Server<ClientToServerEvents, ServerTo
 
         // Broadcast updated game state
         broadcastGameState(io, gameId);
+      } catch {
+        return;
+      }
+    });
+
+    socket.on('role:action', ({ action, targetId, targetIds, cardIndex, responseId, algorithmId }) => {
+      try {
+        const { gameId, playerId } = socket.data;
+
+        if (!gameId || !playerId) {
+          return;
+        }
+
+        const game = gameManager.getGameOrThrow(gameId);
+        const playerState = game.playerStates[playerId];
+        const role = playerState?.roleId ? getRoleById(playerState.roleId) : null;
+
+        if (!role) {
+          return;
+        }
+
+        // Handle different ability actions
+        switch (action) {
+          case 'spy_card':
+            // Government Official: Spy on a player's card
+            if (targetId && typeof cardIndex === 'number') {
+              const targetState = game.playerStates[targetId];
+              if (targetState && targetState.hand && targetState.hand[cardIndex]) {
+                socket.emit('ability:result', {
+                  playerId,
+                  roleId: role.id,
+                  abilityName: role.abilityName || 'Unknown',
+                  result: 'Card revealed',
+                  details: { card: targetState.hand[cardIndex] }
+                });
+              }
+            }
+            break;
+
+          case 'ask_question':
+            // Journalist: Ask a player about a response
+            if (targetId && responseId) {
+              const targetPlayer = game.players.find(p => p.id === targetId);
+              if (targetPlayer) {
+                // Broadcast announcement to all players
+                game.publicAnnouncements.push({
+                  id: crypto.randomUUID(),
+                  type: 'journalist',
+                  message: `${role.name || 'Journalist'} asked ${targetPlayer.name} about their evidence.`,
+                  timestamp: Date.now()
+                });
+                io.to(gameId).emit('ability:result', {
+                  playerId,
+                  roleId: role.id,
+                  abilityName: role.abilityName || 'Unknown',
+                  result: 'Question sent',
+                  details: { targetId, responseId }
+                });
+              }
+            }
+            break;
+
+          case 'lock_vote':
+            // Analyst: Lock vote on a response
+            if (responseId && playerState) {
+              playerState.lockedVote = responseId;
+              socket.emit('ability:result', {
+                playerId,
+                roleId: role.id,
+                abilityName: role.abilityName || 'Unknown',
+                result: 'Vote locked',
+                details: { responseId }
+              });
+            }
+            break;
+
+          case 'crosscheck':
+            // Investigator: Check if two players are on same side
+            if (targetIds && targetIds.length === 2 && targetIds[0] && targetIds[1]) {
+              const player1 = game.playerStates[targetIds[0]];
+              const player2 = game.playerStates[targetIds[1]];
+              const role1 = player1?.roleId ? getRoleById(player1.roleId) : null;
+              const role2 = player2?.roleId ? getRoleById(player2.roleId) : null;
+              const isSameSide = role1?.faction === role2?.faction;
+              
+              socket.emit('ability:result', {
+                playerId,
+                roleId: role.id,
+                abilityName: role.abilityName || 'Unknown',
+                result: isSameSide ? 'SAME SIDE' : 'DIFFERENT SIDES',
+                details: { targetIds, isSameSide }
+              });
+            }
+            break;
+
+          case 'breach':
+            // Hacker: Reveal a player's role
+            if (targetId) {
+              const targetState = game.playerStates[targetId];
+              const targetRole = targetState?.roleId ? getRoleById(targetState.roleId) : null;
+              
+              socket.emit('ability:result', {
+                playerId,
+                roleId: role.id,
+                abilityName: role.abilityName || 'Unknown',
+                result: 'Account breached',
+                details: { targetId, role: targetRole?.name || 'Unknown' }
+              });
+            }
+            break;
+
+          case 'select_algorithm':
+            // Algorithm: Select algorithm to shadowban cards
+            if (algorithmId) {
+              game.selectedAlgorithm = algorithmId;
+              // Broadcast to all players
+              io.to(gameId).emit('ability:result', {
+                playerId,
+                roleId: role.id,
+                abilityName: role.abilityName || 'Unknown',
+                result: 'Algorithm selected',
+                details: { algorithmId }
+              });
+            }
+            break;
+
+          case 'closed_circuit':
+            // Echo Chamber: Mute all except selected players for 30s
+            if (targetIds && targetIds.length === 2) {
+              game.echoChamberActive = true;
+              game.echoChamberAllowedPlayers = targetIds;
+              game.echoChamberEndsAt = Date.now() + 30000;
+              
+              // Broadcast announcement
+              const player1 = game.players.find(p => p.id === targetIds[0]);
+              const player2 = game.players.find(p => p.id === targetIds[1]);
+              game.publicAnnouncements.push({
+                id: crypto.randomUUID(),
+                type: 'echo_chamber',
+                message: `CLOSED CIRCUIT: Only ${player1?.name || 'Player 1'} and ${player2?.name || 'Player 2'} may speak for 30 seconds.`,
+                timestamp: Date.now()
+              });
+              
+              io.to(gameId).emit('ability:result', {
+                playerId,
+                roleId: role.id,
+                abilityName: role.abilityName || 'Unknown',
+                result: 'Closed circuit activated',
+                details: { targetIds, endsAt: game.echoChamberEndsAt }
+              });
+            }
+            break;
+
+          case 'mute':
+            // Influencer: Mute a player next round
+            if (targetId) {
+              game.influencerMutedPlayerId = targetId;
+              const targetPlayer = game.players.find(p => p.id === targetId);
+              
+              socket.emit('ability:result', {
+                playerId,
+                roleId: role.id,
+                abilityName: role.abilityName || 'Unknown',
+                result: 'Player muted',
+                details: { targetId, playerName: targetPlayer?.name || 'Unknown' }
+              });
+            }
+            break;
+
+          default:
+            console.log('Unknown ability action:', action);
+        }
+
+        // Mark ability as used
+        if (playerState) {
+          playerState.abilityUsed = true;
+        }
+
+        // Broadcast updated game state
+        broadcastGameState(io, gameId);
       } catch (error) {
-        const { playerId } = socket.data;
-        // Send error to the player
-        socket.emit('ability:result', {
-          playerId: playerId || 'unknown',
-          roleId: 'unknown',
-          abilityName: 'Unknown',
-          result: error instanceof Error ? error.message : 'Failed to activate ability',
-          details: null
-        });
+        console.error('Error handling role action:', error);
         return;
       }
     });

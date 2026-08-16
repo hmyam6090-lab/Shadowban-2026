@@ -6,6 +6,7 @@ export interface InformationCardProps {
   showBack?: boolean;
   selected?: boolean;
   onClick?: () => void;
+  shadowbanned?: boolean;
 }
 
 export function InformationCard({
@@ -14,6 +15,7 @@ export function InformationCard({
   showBack = false,
   selected = false,
   onClick,
+  shadowbanned = false,
 }: InformationCardProps) {
   if (showBack) {
     return (
@@ -31,11 +33,16 @@ export function InformationCard({
 
   return (
     <article
-      className={`info-card ${accent} ${selected ? "selected" : ""}`}
+      className={`info-card ${accent} ${selected ? "selected" : ""} ${shadowbanned ? "shadowbanned" : ""}`}
       onClick={onClick}
     >
       <div className="card-image-container">
         <img src={cardImage} alt={card.title} className="card-image" />
+        {shadowbanned && (
+          <div className="shadowban-overlay">
+            <div className="shadowban-x">✕</div>
+          </div>
+        )}
       </div>
     </article>
   );

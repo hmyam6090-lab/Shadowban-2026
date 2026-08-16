@@ -67,19 +67,50 @@ export class GameManager {
       throw new Error('At least 2 connected players are required.');
     }
 
-    // Assign random roles to all players
+    // Assign balanced roles to all players
     const allRoles = getAllRoles();
-    const shuffledRoles = [...allRoles].sort(() => Math.random() - 0.5);
+    const algorithmRoles = allRoles.filter(role => role.faction === 'ALGORITHM');
+    const societyRoles = allRoles.filter(role => role.faction === 'SOCIETY');
 
-    game.players.forEach((player,	index) => {
+    // Calculate balanced distribution: at least 1 Algorithm, rest Society
+    // Society should always outnumber Algorithm
+    const playerCount = game.players.length;
+    const algorithmCount = Math.max(1, Math.floor(playerCount / 3)); // ~1/3 Algorithm, ~2/3 Society
+    const societyCount = playerCount - algorithmCount;
+
+    // Shuffle both role pools
+    const shuffledAlgorithmRoles = [...algorithmRoles].sort(() => Math.random() - 0.5);
+    const shuffledSocietyRoles = [...societyRoles].sort(() => Math.random() - 0.5);
+
+    // Create the role assignment pool
+    const rolePool: string[] = [];
+    
+    // Add Algorithm roles (with replacement if needed)
+    for (let i = 0; i < algorithmCount; i++) {
+      const roleIndex = i % shuffledAlgorithmRoles.length;
+      const role = shuffledAlgorithmRoles[roleIndex];
+      if (role) {
+        rolePool.push(role.id);
+      }
+    }
+    
+    // Add Society roles (with replacement if needed)
+    for (let i = 0; i < societyCount; i++) {
+      const roleIndex = i % shuffledSocietyRoles.length;
+      const role = shuffledSocietyRoles[roleIndex];
+      if (role) {
+        rolePool.push(role.id);
+      }
+    }
+
+    // Shuffle the final pool
+    const shuffledPool = rolePool.sort(() => Math.random() - 0.5);
+
+    // Assign roles to players
+    game.players.forEach((player, index) => {
       const playerState = game.playerStates[player.id];
-      if (playerState) {
-        // Assign a random role (with replacement if more players than roles)
-        const roleIndex = index % shuffledRoles.length;
-        const role = shuffledRoles[roleIndex];
-        if (role) {
-          playerState.roleId = role.id;
-        }
+      if (playerState && shuffledPool[index]) {
+        playerState.roleId = shuffledPool[index];
       }
     });
 
@@ -102,9 +133,6 @@ export class GameManager {
         this.roundManager.dealInformation(game);
         break;
       case GamePhase.DEAL_INFORMATION:
-        this.roundManager.startAbilityPhase(game);
-        break;
-      case GamePhase.ABILITY:
         this.roundManager.startDiscussion(game);
         break;
       case GamePhase.DISCUSSION:
@@ -682,7 +710,6 @@ export class GameManager {
 
     // All players start with no role - roles assigned randomly when game starts
     game.playerStates[player.id] = {
-      playerId: player.id,
       roleId: '',
       hand: [],
       presentedCardIds: [],

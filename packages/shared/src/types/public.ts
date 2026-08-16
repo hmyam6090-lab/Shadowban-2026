@@ -2,7 +2,7 @@ import type { AlgorithmSetup, Crisis, Faction, GamePhase, InformationCard, Playe
 
 export type PublicPlayer = Pick<Player, 'id' | 'name' | 'isHost' | 'connected' | 'ready' | 'avatar'>;
 
-export type PublicInformationCard = Pick<InformationCard, 'id' | 'crisisId' | 'type' | 'title' | 'text'>;
+export type PublicInformationCard = Pick<InformationCard, 'id' | 'crisisId' | 'type' | 'title' | 'text' | 'image'>;
 
 export type CrisisPublicDTO = Omit<Crisis, 'evidenceIds' | 'noiseIds'>;
 
@@ -29,7 +29,7 @@ export interface PublicGameState {
   algorithmWins: number;
   publicAnnouncements: Array<{
     id: string;
-    type: 'journalist_claim' | 'ability_used' | 'system';
+    type: 'journalist_claim' | 'ability_used' | 'system' | 'journalist' | 'echo_chamber';
     message: string;
     timestamp: number;
     playerId?: string;
